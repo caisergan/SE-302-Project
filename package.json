@@ -13,8 +13,8 @@
   },
   "keywords": [],
   "author": {
-    "name": "Ege Ayyıldız",
-    "email": "ege@techtile.com.tr"
+    "name": "Ege Ayyildiz",
+    "email": "egeayyildiz35@gmail.com"
   },
   "license": "MIT",
   "devDependencies": {
@@ -28,6 +28,7 @@
     "@electron-forge/plugin-vite": "^7.10.2",
     "@electron/fuses": "^1.8.0",
     "@tailwindcss/postcss": "^4.1.17",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/electron-squirrel-startup": "^1.0.2",
     "@types/papaparse": "^5.5.0",
     "@types/react": "^19.2.6",
@@ -45,6 +46,7 @@
     "vite": "^5.4.21"
   },
   "dependencies": {
+    "better-sqlite3": "^12.4.6",
     "clsx": "^2.1.1",
     "electron-squirrel-startup": "^1.0.1",
     "i18next": "^25.6.3",
