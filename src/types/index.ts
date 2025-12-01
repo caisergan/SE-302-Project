@@ -5,6 +5,14 @@ export enum ViewMode {
   SETTINGS = 'Settings',
 }
 
+export interface GenerationConstraints {
+  startDate: Date;
+  endDate: Date;
+  includeWeekends: boolean;
+  dailyStartTime: string; // "09:00"
+  dailyEndTime: string;   // "17:00"
+}
+
 export interface Course {
   id: string;
   code: string;
