@@ -148,12 +148,6 @@ const App: React.FC = () => {
             {currentView === ViewMode.SCHEDULE && t('common.scheduleView')}
             {currentView === ViewMode.SETTINGS && t('common.settings')}
           </h1>
-          <div className="flex items-center space-x-4">
-            <div className="text-sm text-slate-500">Academic Year 2024-2025</div>
-            <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
-              SA
-            </div>
-          </div>
         </header>
         <div className="flex-1 overflow-auto p-6 relative">
           {renderContent()}
