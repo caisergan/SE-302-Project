@@ -1,0 +1,2 @@
+to install required packets , write this to console : npm install --save-dev jest ts-jest @types/jest jest-environment-jsdom @testing-library/react @testing-library/jest-dom @testing-library/user-event
+then npm test 
