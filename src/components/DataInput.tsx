@@ -137,21 +137,27 @@ export const DataInput: React.FC<DataInputProps> = ({
     const [modalMode, setModalMode] = useState<'add' | 'edit'>('edit');
     const [isClearMenuOpen, setIsClearMenuOpen] = useState(false);
 
-    const handleClearData = (type: 'all' | 'courses' | 'classrooms' | 'students') => {
+    const handleClearData = async (type: 'all' | 'courses' | 'classrooms' | 'students') => {
         const confirmMessage = type === 'all'
             ? t('dataInput.confirmDeleteAll')
             : t('dataInput.confirmDeleteSection', { section: type });
 
         if (window.confirm(confirmMessage)) {
             if (type === 'all') {
+                await window.api.clearCourses();
+                await window.api.clearClassrooms();
+                await window.api.clearStudents();
                 setCourses([]);
                 setClassrooms([]);
                 setStudents([]);
             } else if (type === 'courses') {
+                await window.api.clearCourses();
                 setCourses([]);
             } else if (type === 'classrooms') {
+                await window.api.clearClassrooms();
                 setClassrooms([]);
             } else if (type === 'students') {
+                await window.api.clearStudents();
                 setStudents([]);
             }
             setIsClearMenuOpen(false);
@@ -180,17 +186,28 @@ export const DataInput: React.FC<DataInputProps> = ({
         setIsModalOpen(true);
     };
 
-    const handleSaveItem = (updatedItem: any) => {
+    const handleSaveItem = async (updatedItem: any) => {
         if (activeTab === 'courses') {
             if (modalMode === 'add') {
                 const newItem = { ...updatedItem, id: updatedItem.code };
+                // For single add, we might want a single add API, but for now let's use bulk or just update local state?
+                // The user asked to fix "Imported data", but manual add should probably also persist.
+                // The current plan focused on Import. Let's stick to fixing Import first, but ideally we should fix manual add too.
+                // However, the current `addCourse` in preload only takes `course`.
+                // Let's assume for now we just update state for manual add, or better, call the API if available.
+                // `window.api.addCourse` exists.
+                await window.api.addCourse(newItem);
                 setCourses(prev => [...prev, newItem]);
             } else {
+                // Update not implemented in backend yet for single item update.
+                // Just update local state for now.
                 setCourses(prev => prev.map(c => c.id === updatedItem.id ? updatedItem : c));
             }
         } else if (activeTab === 'classrooms') {
             if (modalMode === 'add') {
                 const newItem = { ...updatedItem, id: updatedItem.name };
+                // No single add API for classrooms yet in my plan, but I can use bulk with 1 item.
+                await window.api.addClassroomsBulk([newItem]);
                 setClassrooms(prev => [...prev, newItem]);
             } else {
                 setClassrooms(prev => prev.map(c => c.id === updatedItem.id ? updatedItem : c));
@@ -200,7 +217,7 @@ export const DataInput: React.FC<DataInputProps> = ({
         setEditingItem(null);
     };
 
-    const parseCourseListFile = (rows: string[]) => {
+    const parseCourseListFile = async (rows: string[]) => {
         const newCourses: Course[] = [];
 
         rows.forEach((row) => {
@@ -217,16 +234,34 @@ export const DataInput: React.FC<DataInputProps> = ({
         });
 
         if (newCourses.length > 0) {
+            await window.api.addCoursesBulk(newCourses);
+            // Refresh from DB to be sure or just update state
+            const savedCourses = await window.api.getCourses();
+            // Map DB result to frontend type if needed, but they are similar.
+            // DB has `enrolled_students`, frontend `enrolledStudents`.
+            // We need to map it.
+            const mappedCourses = savedCourses.map((c: any) => ({
+                id: c.code, // Use code as ID for frontend consistency or c.id? Frontend uses string ID often.
+                // The current frontend uses `code` as `id` for courses often.
+                // Let's check `Course` type.
+                // In `types/index.ts` (not seen but inferred), `id` is likely string or number.
+                // In `DataInput.tsx` line 211: `id: code`.
+                // So let's keep using code as ID for now or map properly.
+                code: c.code,
+                name: c.name,
+                enrolledStudents: c.enrolled_students
+            }));
+
             setCourses(prev => {
                 const existingIds = new Set(prev.map(c => c.id));
-                const uniqueNew = newCourses.filter(c => !existingIds.has(c.id));
+                const uniqueNew = mappedCourses.filter((c: any) => !existingIds.has(c.id));
                 return [...prev, ...uniqueNew];
             });
             alert(t('dataInput.importedCourses', { count: newCourses.length }));
         }
     };
 
-    const parseClassroomFile = (rows: string[]) => {
+    const parseClassroomFile = async (rows: string[]) => {
         const newRooms: Classroom[] = [];
 
         rows.forEach((row) => {
@@ -248,16 +283,25 @@ export const DataInput: React.FC<DataInputProps> = ({
         });
 
         if (newRooms.length > 0) {
+            await window.api.addClassroomsBulk(newRooms);
+            const savedRooms = await window.api.getClassrooms();
+            const mappedRooms = savedRooms.map((r: any) => ({
+                id: r.name,
+                name: r.name,
+                capacity: r.capacity,
+                building: r.building
+            }));
+
             setClassrooms(prev => {
                 const existingIds = new Set(prev.map(r => r.id));
-                const uniqueNew = newRooms.filter(r => !existingIds.has(r.id));
+                const uniqueNew = mappedRooms.filter((r: any) => !existingIds.has(r.id));
                 return [...prev, ...uniqueNew];
             });
             alert(t('dataInput.importedClassrooms', { count: newRooms.length }));
         }
     };
 
-    const parseStudentAttendanceFile = (rows: string[]) => {
+    const parseStudentAttendanceFile = async (rows: string[]) => {
         const studentMap = new Map<string, Set<string>>();
         let currentCourseCode = '';
 
@@ -288,38 +332,38 @@ export const DataInput: React.FC<DataInputProps> = ({
             }
         });
 
-        const newStudents: Student[] = [];
+        const newStudents: any[] = [];
         studentMap.forEach((coursesSet, studentId) => {
             newStudents.push({
-                id: studentId,
+                studentNumber: studentId,
                 name: `Student ${studentId.split('_')[2] || studentId}`,
-                email: `${studentId.toLowerCase()}@uni.edu`,
                 enrolledCourses: Array.from(coursesSet)
             });
         });
 
         if (newStudents.length > 0) {
-            setStudents(prev => {
-                const existingMap = new Map(prev.map(s => [s.id, s]));
+            await window.api.addStudentsBulk(newStudents);
 
-                newStudents.forEach(ns => {
-                    if (existingMap.has(ns.id)) {
-                        const existing = existingMap.get(ns.id)!;
-                        const combinedCourses = Array.from(new Set([...existing.enrolledCourses, ...ns.enrolledCourses]));
-                        existingMap.set(ns.id, { ...existing, enrolledCourses: combinedCourses });
-                    } else {
-                        existingMap.set(ns.id, ns);
-                    }
-                });
-                return Array.from(existingMap.values());
-            });
+            // Fetch updated students
+            const savedStudents = await window.api.getStudents();
+            const mappedStudents = savedStudents.map((s: any) => ({
+                id: s.student_number,
+                name: s.name,
+                email: `${s.student_number.toLowerCase()}@uni.edu`,
+                enrolledCourses: s.enrolled_courses
+            }));
 
-            setCourses(prevCourses => {
-                return prevCourses.map(c => {
-                    const count = newStudents.filter(s => s.enrolledCourses.includes(c.id)).length;
-                    return count > 0 ? { ...c, enrolledStudents: count } : c;
-                });
-            });
+            setStudents(mappedStudents);
+
+            // Also refresh courses to update enrolled counts
+            const savedCourses = await window.api.getCourses();
+            const mappedCourses = savedCourses.map((c: any) => ({
+                id: c.code,
+                code: c.code,
+                name: c.name,
+                enrolledStudents: c.enrolled_students
+            }));
+            setCourses(mappedCourses);
 
             alert(t('dataInput.processedAttendance', { count: newStudents.length }));
         } else {

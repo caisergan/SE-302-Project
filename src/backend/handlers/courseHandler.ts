@@ -9,4 +9,12 @@ export const registerCourseHandlers = () => {
     ipcMain.handle('add-course', (_, course: { code: string; name: string; enrolledStudents: number }) => {
         return courseService.addCourse(course.code, course.name, course.enrolledStudents);
     });
+
+    ipcMain.handle('add-courses-bulk', (_, courses: { code: string; name: string; enrolledStudents: number }[]) => {
+        return courseService.addCoursesBulk(courses);
+    });
+
+    ipcMain.handle('clear-courses', () => {
+        return courseService.clearCourses();
+    });
 };

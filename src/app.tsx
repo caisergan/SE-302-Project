@@ -21,9 +21,38 @@ const App: React.FC = () => {
   const [showConstraintModal, setShowConstraintModal] = useState(false);
 
   useEffect(() => {
-    setCourses(MOCK_COURSES);
-    setClassrooms(MOCK_CLASSROOMS);
-    setStudents(MOCK_STUDENTS);
+    const loadData = async () => {
+      try {
+        const savedCourses = await window.api.getCourses();
+        const savedClassrooms = await window.api.getClassrooms();
+        const savedStudents = await window.api.getStudents();
+
+        setCourses(savedCourses.map((c: any) => ({
+          id: c.code,
+          code: c.code,
+          name: c.name,
+          enrolledStudents: c.enrolled_students
+        })));
+
+        setClassrooms(savedClassrooms.map((r: any) => ({
+          id: r.name,
+          name: r.name,
+          capacity: r.capacity,
+          building: r.building
+        })));
+
+        setStudents(savedStudents.map((s: any) => ({
+          id: s.student_number,
+          name: s.name,
+          email: `${s.student_number.toLowerCase()}@uni.edu`,
+          enrolledCourses: s.enrolled_courses
+        })));
+      } catch (error) {
+        console.error("Failed to load data:", error);
+      }
+    };
+
+    loadData();
 
     const handleNavigate = (event: CustomEvent) => {
       const viewName = event.detail;
