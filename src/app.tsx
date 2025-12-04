@@ -5,7 +5,8 @@ import { Dashboard } from './components/Dashboard';
 import { DataInput } from './components/DataInput';
 import { ScheduleView } from './components/ScheduleView';
 import { Settings } from './components/Settings';
-import { ViewMode, Course, Classroom, Student, ExamSession } from './types';
+import { ConstraintSelector } from './components/ConstraintSelector';
+import { ViewMode, Course, Classroom, Student, ExamSession, GenerationConstraints } from './types';
 import { MOCK_COURSES, MOCK_CLASSROOMS, MOCK_STUDENTS } from './constants';
 
 const App: React.FC = () => {
@@ -17,6 +18,7 @@ const App: React.FC = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [schedule, setSchedule] = useState<ExamSession[]>([]);
   const [isGenerated, setIsGenerated] = useState(false);
+  const [showConstraintModal, setShowConstraintModal] = useState(false);
 
   useEffect(() => {
     setCourses(MOCK_COURSES);
@@ -43,24 +45,55 @@ const App: React.FC = () => {
   }, []);
 
   const handleGenerateSchedule = () => {
+    setShowConstraintModal(true);
+  };
+
+  const handleFinalizeSchedule = (constraints: GenerationConstraints) => {
+    setShowConstraintModal(false);
     const newSchedule: ExamSession[] = [];
-    const startDate = new Date();
-    startDate.setHours(9, 0, 0, 0);
+    let currentDate = new Date(constraints.startDate);
+    const endDate = new Date(constraints.endDate);
 
-    courses.forEach((course, index) => {
-      const room = classrooms[index % classrooms.length];
-      const examTime = new Date(startDate);
-      examTime.setHours(9 + (index % 3) * 3);
-      examTime.setDate(startDate.getDate() + Math.floor(index / 3));
+    const [startHour, startMinute] = constraints.dailyStartTime.split(':').map(Number);
+    const [endHour, endMinute] = constraints.dailyEndTime.split(':').map(Number);
 
-      newSchedule.push({
-        id: `sess-${index}`,
-        courseId: course.id,
-        classroomId: room.id,
-        startTime: examTime,
-        endTime: new Date(examTime.getTime() + 2 * 60 * 60 * 1000),
-      });
-    });
+    let currentCourseIndex = 0;
+
+    while (currentDate <= endDate && currentCourseIndex < courses.length) {
+      const dayOfWeek = currentDate.getDay();
+      if (!constraints.includeWeekends && (dayOfWeek === 0 || dayOfWeek === 6)) {
+        currentDate.setDate(currentDate.getDate() + 1);
+        continue;
+      }
+
+      currentDate.setHours(startHour, startMinute, 0, 0);
+
+      const dayEnd = new Date(currentDate);
+      dayEnd.setHours(endHour, endMinute, 0, 0);
+
+      let dailySessionCount = 0;
+
+      while (currentDate.getTime() + 2 * 60 * 60 * 1000 <= dayEnd.getTime() && currentCourseIndex < courses.length) {
+        const course = courses[currentCourseIndex];
+        const room = classrooms[currentCourseIndex % classrooms.length];
+
+        newSchedule.push({
+          id: `sess-${currentCourseIndex}`,
+          courseId: course.id,
+          classroomId: room.id,
+          startTime: new Date(currentDate),
+          endTime: new Date(currentDate.getTime() + 2 * 60 * 60 * 1000),
+        });
+
+        currentCourseIndex++;
+        dailySessionCount++;
+
+        currentDate.setHours(currentDate.getHours() + 3);
+      }
+
+      currentDate = new Date(currentDate);
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
 
     setSchedule(newSchedule);
     setIsGenerated(true);
@@ -105,26 +138,28 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full w-full bg-slate-50">
+    <div className="flex h-screen bg-slate-50 font-sans text-slate-900">
       <Sidebar currentView={currentView} onViewChange={setCurrentView} />
-      <main className="flex-1 h-full overflow-hidden flex flex-col">
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
-          <h1 className="text-xl font-bold text-slate-800 uppercase tracking-wide">
+      <main className="flex-1 flex flex-col overflow-hidden relative">
+        <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 shadow-sm z-10">
+          <h1 className="text-xl font-bold text-slate-800">
             {currentView === ViewMode.DASHBOARD && t('common.dashboard')}
             {currentView === ViewMode.DATA && t('common.dataManagement')}
             {currentView === ViewMode.SCHEDULE && t('common.scheduleView')}
             {currentView === ViewMode.SETTINGS && t('common.settings')}
           </h1>
-          <div className="flex items-center space-x-4">
-            <div className="text-sm text-slate-500">Academic Year 2024-2025</div>
-            <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold">
-              SA
-            </div>
-          </div>
         </header>
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-auto p-6 relative">
           {renderContent()}
         </div>
+
+        {/* Constraint Modal Overlay */}
+        {showConstraintModal && (
+          <ConstraintSelector
+            onBack={() => setShowConstraintModal(false)}
+            onGenerate={handleFinalizeSchedule}
+          />
+        )}
       </main>
     </div>
   );

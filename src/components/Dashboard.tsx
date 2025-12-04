@@ -35,15 +35,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
           <div className="text-slate-500 text-sm font-medium">{t('dashboard.totalCourses')}</div>
           <div className="text-3xl font-bold text-indigo-600 mt-1">{courses.length}</div>
-          <div className="text-xs text-green-600 mt-2 flex items-center">
-            +2 added recently
-          </div>
         </div>
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-          <div className="text-slate-500 text-sm font-medium">{t('dashboard.availableRooms')}</div>
-          <div className="text-3xl font-bold text-purple-600 mt-1">{classrooms.length}</div>
+          <div className="text-slate-500 text-sm font-medium">{t('dashboard.totalStudents')}</div>
+          <div className="text-3xl font-bold text-pink-600 mt-1">{students.length}</div>
           <div className="text-xs text-slate-400 mt-2">
-            {t('dashboard.roomCapacities')}: {classrooms.reduce((acc, r) => acc + r.capacity, 0)} {t('dashboard.seats')}
+            {t('dataInput.enrolledCourses')}: {students.reduce((acc, s) => acc + s.enrolledCourses.length, 0)}
           </div>
         </div>
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">

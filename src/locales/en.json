@@ -31,7 +31,7 @@
         "noSchedule": "No schedule generated yet. Import data and click generate to start.",
         "totalCourses": "Total Courses",
         "availableRooms": "Available Rooms",
-        "pendingSchedule": "Pending Schedule",
+        "pendingSchedule": "Schedule Status",
         "notGenerated": "Not Generated",
         "sessionsScheduled": "{{count}} sessions scheduled",
         "waitingForAction": "Waiting for action",
@@ -93,7 +93,7 @@
         "title": "Schedule View",
         "export": "Export",
         "exportExcel": "Export to Excel",
-        "filterCourse": "Filter by Course",
+        "filterCourse": "Filter By Course",
         "filterClassroom": "Filter by Classroom",
         "allCourses": "All Courses",
         "allClassrooms": "All Classrooms",
@@ -103,8 +103,8 @@
         "students": "Students",
         "goToDashboard": "Go to the Dashboard to run the generator.",
         "filterAll": "All",
-        "filterRoom": "Room",
-        "filterStudent": "Student",
+        "filterRoom": "Filter By Room",
+        "filterStudent": "Filter By Student",
         "capacityShort": "Cap: {{capacity}}"
     },
     "settings": {
