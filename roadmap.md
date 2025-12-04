@@ -16,16 +16,20 @@ The core infrastructure and data entry capabilities are in place.
     - [x] Edit/Update data capability (via re-import or manual edit).
 - [x] **Basic Navigation**: Sidebar and routing between views.
 
-## 🚧 Phase 2: Visualization & UI Structure (In Progress)
-**Status:** 🟡 Half Way
+## 🚧 Phase 2: Visualization & UI Structure (Completed)
+**Status:** ✅ Done
 
-The views exist but currently display mock data or are not connected to the real scheduling logic.
-- [x] **Dashboard UI**: Configuration inputs for Days/Slots.
-- [-] **Schedule Views**:
-    - [-] **By Classroom**: View exists, needs real data connection.
-    - [-] **By Student**: View exists, needs real data connection.
-    - [-] **By Course**: View exists, needs real data connection.
-    - [-] **By Day**: View exists, needs real data connection.
+The UI structure is complete with all views implemented and connected.
+- [x] **Dashboard UI**: Shows statistics and "Generate Schedule" button.
+- [x] **ConstraintSelector**: Modal for configuring schedule parameters (dates, times, weekends).
+- [x] **Schedule Generation**: Basic greedy algorithm implemented in `app.tsx`.
+- [x] **Schedule Views**:
+    - [x] **By Classroom**: View displays assigned exams per room.
+    - [x] **By Student**: View displays individual student schedules.
+    - [x] **By Course**: View displays exam time/location per course.
+    - [x] **By Day**: View displays daily exam overview.
+
+> **Note**: Views are fully functional but the underlying scheduler uses a simple round-robin algorithm without constraint enforcement.
 
 ## 🛠 Phase 3: Core Scheduling Logic (Next Steps)
 **Status:** 🔴 Not Started

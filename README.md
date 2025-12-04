@@ -6,28 +6,35 @@ SchedulR is a desktop application designed for Student Affairs authorities to au
 
 ### 📅 Schedule Management
 
-- **Automated Generation**: Generates valid exam schedules based on available resources and constraints.
+- **Schedule Generation**: Generates exam schedules with configurable date ranges and time slots.
 - **Multiple Views**:
   - **By Classroom**: View utilization and assigned exams for each room.
-  - **By Student**: Check individual exam schedules to ensure fairness.
+  - **By Student**: Check individual exam schedules.
   - **By Course**: Confirm final exam times and locations.
   - **By Day**: Daily overview of all scheduled exams.
-- **Conflict Detection**: Reports when no valid solution can be found within the given constraints.
+- **Configurable Parameters**:
+  - Start/End dates
+  - Weekend inclusion
+  - Daily time ranges
+
+> **Note**: Current implementation uses a simple greedy algorithm. Constraint enforcement (no consecutive exams, max 2 exams/day) is not yet implemented.
 
 ### 🎓 Resource Management
 
-- **Data Import**: Import data via files (Excel/CSV) for:
-  - **Courses**: Including registered student lists.
+- **Data Import**: Import data via files (CSV/Text) for:
+  - **Courses**: Including course codes and student counts.
   - **Classrooms**: Including capacity information.
-  - **Attendances**: Including student attendance information.
+  - **Students**: Including enrollment data.
 - **Data Management**: Edit, update, and re-import data as requirements change.
+- **Manual Entry**: Add/edit courses and classrooms individually.
 
-### 🛡️ Constraints & Logic
+### 🛡️ Constraints & Logic (Planned)
 
-The system strictly enforces the following rules to ensure student well-being:
+The following constraints are specified in requirements but not yet enforced:
 
-- **No Consecutive Exams**: A student cannot have two exams in consecutive time slots.
-- **Max Daily Exams**: A student cannot be assigned more than two exams in a single day.
+- **No Consecutive Exams**: A student should not have two exams in consecutive time slots.
+- **Max Daily Exams**: A student should not be assigned more than two exams in a single day.
+- **Room Capacity**: Exams should only be assigned to rooms with sufficient capacity.
 
 ### 🌍 Internationalization
 
@@ -35,9 +42,8 @@ The system strictly enforces the following rules to ensure student well-being:
 
 ### 💾 Data Handling
 
-- **Persistence**: Saves generated schedules and input data locally (SQLite) to avoid re-entry.
-- **Export**: Export finalized schedules to documents (CSV/Excel) for distribution.
-- **Modern UI**: Sleek, responsive design powered by TailwindCSS.
+- **In-Memory State**: Currently uses React state (data is lost on app close).
+- **Export**: Not yet implemented.
 
 ## Tech Stack
 
