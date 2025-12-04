@@ -1,6 +1,10 @@
 import { app, BrowserWindow, Menu } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
+import { registerHandlers } from './backend/handlers';
+
+registerHandlers();
+
 
 if (started) {
   app.quit();
