@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNotification } from '../context/NotificationContext';
 import { Course, Classroom, Student } from '../types';
 
 interface DataInputProps {
@@ -129,6 +130,7 @@ export const DataInput: React.FC<DataInputProps> = ({
     courses, setCourses, classrooms, setClassrooms, students, setStudents
 }) => {
     const { t } = useTranslation();
+    const { showNotification } = useNotification();
     const [activeTab, setActiveTab] = useState<Tab>('courses');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -257,7 +259,7 @@ export const DataInput: React.FC<DataInputProps> = ({
                 const uniqueNew = mappedCourses.filter((c: any) => !existingIds.has(c.id));
                 return [...prev, ...uniqueNew];
             });
-            alert(t('dataInput.importedCourses', { count: newCourses.length }));
+            showNotification(t('dataInput.importedCourses', { count: newCourses.length }), 'success');
         }
     };
 
@@ -297,7 +299,7 @@ export const DataInput: React.FC<DataInputProps> = ({
                 const uniqueNew = mappedRooms.filter((r: any) => !existingIds.has(r.id));
                 return [...prev, ...uniqueNew];
             });
-            alert(t('dataInput.importedClassrooms', { count: newRooms.length }));
+            showNotification(t('dataInput.importedClassrooms', { count: newRooms.length }), 'success');
         }
     };
 
@@ -365,9 +367,9 @@ export const DataInput: React.FC<DataInputProps> = ({
             }));
             setCourses(mappedCourses);
 
-            alert(t('dataInput.processedAttendance', { count: newStudents.length }));
+            showNotification(t('dataInput.processedAttendance', { count: newStudents.length }), 'success');
         } else {
-            alert(t('dataInput.noStudents'));
+            showNotification(t('dataInput.noStudents'), 'error');
         }
     };
 
@@ -379,19 +381,19 @@ export const DataInput: React.FC<DataInputProps> = ({
             if (text.includes(';') || rows[0].includes('CLASSROOMS')) {
                 parseClassroomFile(rows);
             } else {
-                alert(t('dataInput.formatError'));
+                showNotification(t('dataInput.formatError'), 'error');
             }
         } else if (activeTab === 'courses') {
             if (rows[0].includes('COURSES IN THE SYSTEM') || rows.some(r => r.startsWith('CourseCode_'))) {
                 parseCourseListFile(rows);
             } else {
-                alert(t('dataInput.formatError'));
+                showNotification(t('dataInput.formatError'), 'error');
             }
         } else if (activeTab === 'students') {
             if (text.includes('[') && text.includes(']')) {
                 parseStudentAttendanceFile(rows);
             } else {
-                alert(t('dataInput.formatError'));
+                showNotification(t('dataInput.formatError'), 'error');
             }
         }
     };
@@ -407,7 +409,7 @@ export const DataInput: React.FC<DataInputProps> = ({
                 processCSV(text);
             } catch (err) {
                 console.error("Failed to parse file", err);
-                alert(t('dataInput.parseError'));
+                showNotification(t('dataInput.parseError'), 'error');
             }
         };
         reader.readAsText(file);

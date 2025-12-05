@@ -7,7 +7,7 @@ import { ScheduleView } from './components/ScheduleView';
 import { Settings } from './components/Settings';
 import { ConstraintSelector } from './components/ConstraintSelector';
 import { ViewMode, Course, Classroom, Student, ExamSession, GenerationConstraints } from './types';
-import { MOCK_COURSES, MOCK_CLASSROOMS, MOCK_STUDENTS } from './constants';
+import { NotificationProvider } from './context/NotificationContext';
 
 const App: React.FC = () => {
   const { t } = useTranslation();
@@ -167,30 +167,32 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans text-slate-900">
-      <Sidebar currentView={currentView} onViewChange={setCurrentView} />
-      <main className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 shadow-sm z-10">
-          <h1 className="text-xl font-bold text-slate-800">
-            {currentView === ViewMode.DASHBOARD && t('common.dashboard')}
-            {currentView === ViewMode.DATA && t('common.dataManagement')}
-            {currentView === ViewMode.SCHEDULE && t('common.scheduleView')}
-            {currentView === ViewMode.SETTINGS && t('common.settings')}
-          </h1>
-        </header>
-        <div className="flex-1 overflow-auto p-6 relative">
-          {renderContent()}
-        </div>
+    <NotificationProvider>
+      <div className="flex h-screen bg-slate-50 font-sans text-slate-900">
+        <Sidebar currentView={currentView} onViewChange={setCurrentView} />
+        <main className="flex-1 flex flex-col overflow-hidden relative">
+          <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 shadow-sm z-10">
+            <h1 className="text-xl font-bold text-slate-800">
+              {currentView === ViewMode.DASHBOARD && t('common.dashboard')}
+              {currentView === ViewMode.DATA && t('common.dataManagement')}
+              {currentView === ViewMode.SCHEDULE && t('common.scheduleView')}
+              {currentView === ViewMode.SETTINGS && t('common.settings')}
+            </h1>
+          </header>
+          <div className="flex-1 overflow-auto p-6 relative">
+            {renderContent()}
+          </div>
 
-        {/* Constraint Modal Overlay */}
-        {showConstraintModal && (
-          <ConstraintSelector
-            onBack={() => setShowConstraintModal(false)}
-            onGenerate={handleFinalizeSchedule}
-          />
-        )}
-      </main>
-    </div>
+          {/* Constraint Modal Overlay */}
+          {showConstraintModal && (
+            <ConstraintSelector
+              onBack={() => setShowConstraintModal(false)}
+              onGenerate={handleFinalizeSchedule}
+            />
+          )}
+        </main>
+      </div>
+    </NotificationProvider>
   );
 };
 
