@@ -14,7 +14,10 @@
         "loading": "Yükleniyor...",
         "success": "Başarılı",
         "error": "Hata",
-        "confirm": "Onayla"
+        "confirm": "Onayla",
+        "previousWeek": "Önceki Hafta",
+        "nextWeek": "Sonraki Hafta",
+        "today": "Bugün"
     },
     "dashboard": {
         "title": "Panel",
@@ -93,8 +96,8 @@
         "title": "Program Görünümü",
         "export": "Dışa Aktar",
         "exportExcel": "Excel'e Aktar",
-        "filterCourse": "Derse Göre Filtrele",
-        "filterClassroom": "Sınıfa Göre Filtrele",
+        "filterCourse": "Ders",
+        "filterClassroom": "Sınıf",
         "allCourses": "Tüm Dersler",
         "allClassrooms": "Tüm Derslikler",
         "time": "Zaman",
@@ -103,8 +106,8 @@
         "students": "Öğrenciler",
         "goToDashboard": "Oluşturucuyu çalıştırmak için Panele gidin.",
         "filterAll": "Tümü",
-        "filterRoom": "Sınıfa Göre Filtrele",
-        "filterStudent": "Öğrenciye Göre Filtrele",
+        "filterRoom": "Sınıf",
+        "filterStudent": "Öğrenci",
         "capacityShort": "Kap: {{capacity}}"
     },
     "settings": {

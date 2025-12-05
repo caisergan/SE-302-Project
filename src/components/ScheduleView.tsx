@@ -16,6 +16,14 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
   const [filterMode, setFilterMode] = useState<FilterMode>('all');
   const [selectedEntityId, setSelectedEntityId] = useState<string>('');
 
+  // Initialize currentDate based on the first exam in the schedule, or today if schedule is empty
+  const [currentDate, setCurrentDate] = useState<Date>(() => {
+    if (schedule.length > 0) {
+      return new Date(schedule[0].startTime);
+    }
+    return new Date();
+  });
+
   useEffect(() => {
     if (filterMode === 'room' && classrooms.length > 0) setSelectedEntityId(classrooms[0].id);
     else if (filterMode === 'course' && courses.length > 0) setSelectedEntityId(courses[0].id);
@@ -23,14 +31,14 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
   }, [filterMode, classrooms, courses, students]);
 
   const weekStart = useMemo(() => {
-    const anchor = schedule.length > 0 ? new Date(schedule[0].startTime) : new Date();
-    const d = new Date(anchor);
+    const d = new Date(currentDate);
     const day = d.getDay();
+    // Adjust to Monday start (if day is 0 (Sunday), subtract 6 days, else subtract day-1)
     const diff = d.getDate() - day + (day === 0 ? -6 : 1);
     d.setDate(diff);
     d.setHours(0, 0, 0, 0);
     return d;
-  }, [schedule]);
+  }, [currentDate]);
 
   const weekDays = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => {
@@ -65,6 +73,22 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
     return date.toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   };
 
+  const navigateWeek = (direction: 'prev' | 'next') => {
+    const newDate = new Date(currentDate);
+    newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
+    setCurrentDate(newDate);
+  };
+
+  const goToToday = () => {
+    setCurrentDate(new Date());
+  };
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.value) {
+      setCurrentDate(new Date(e.target.value));
+    }
+  };
+
   if (schedule.length === 0) {
     return (
       <div className="h-full flex flex-col items-center justify-center text-slate-400">
@@ -79,14 +103,14 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
 
   return (
     <div className="bg-white h-full flex flex-col rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-      <div className="p-4 border-b border-slate-200 flex flex-wrap gap-4 justify-between items-center bg-slate-50/50">
-        <div className="flex items-center gap-4">
-          <div className="flex border border-slate-300 rounded-lg overflow-hidden bg-white shadow-sm">
+      <div className="p-4 border-b border-slate-200 flex gap-4 justify-between items-center bg-slate-50/50 overflow-x-auto">
+        <div className="flex items-center gap-4 flex-nowrap min-w-max">
+          <div className="flex border border-slate-300 rounded-lg overflow-hidden bg-white shadow-sm shrink-0">
             {(['all', 'room', 'student', 'course'] as FilterMode[]).map((m) => (
               <button
                 key={m}
                 onClick={() => setFilterMode(m)}
-                className={`px-4 py-2 text-sm font-medium capitalize transition-colors ${filterMode === m
+                className={`px-4 py-2 text-sm font-medium capitalize transition-colors whitespace-nowrap ${filterMode === m
                   ? 'bg-indigo-600 text-white'
                   : 'text-slate-600 hover:bg-slate-50'
                   }`}
@@ -97,11 +121,11 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
           </div>
 
           {filterMode !== 'all' && (
-            <div className="relative min-w-[240px] animate-fade-in">
+            <div className="relative min-w-[200px] max-w-[300px] animate-fade-in">
               <select
                 value={selectedEntityId}
                 onChange={(e) => setSelectedEntityId(e.target.value)}
-                className="w-full appearance-none bg-white border border-slate-300 text-slate-700 py-2 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm"
+                className="w-full appearance-none bg-white border border-slate-300 text-slate-700 py-2 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm truncate"
               >
                 {filterMode === 'room' && classrooms.map(r => (
                   <option key={r.id} value={r.id}>{r.name} ({t('schedule.capacityShort', { capacity: r.capacity })})</option>
@@ -120,14 +144,41 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
           )}
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="text-sm font-semibold text-slate-600">
-            {formatDate(weekStart)} - {formatDate(new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000))}
-          </div>
-          <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-sm">
+        <div className="flex items-center gap-4 shrink-0">
+          <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-sm whitespace-nowrap">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></svg>
             {t('schedule.export')}
           </button>
+
+          {/* Navigation Controls */}
+          <div className="flex items-center bg-white border border-slate-300 rounded-lg shadow-sm shrink-0">
+            <button
+              onClick={() => navigateWeek('prev')}
+              className="p-2 hover:bg-slate-50 border-r border-slate-300 text-slate-600"
+              title={t('common.previousWeek') || 'Previous Week'}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <button
+              onClick={goToToday}
+              className="px-3 py-2 text-sm font-medium hover:bg-slate-50 border-r border-slate-300 text-slate-700 whitespace-nowrap"
+            >
+              {t('common.today') || 'Today'}
+            </button>
+            <input
+              type="date"
+              value={currentDate.toISOString().split('T')[0]}
+              onChange={handleDateChange}
+              className="px-2 py-1 text-sm border-none focus:ring-0 text-slate-700 w-[130px]"
+            />
+            <button
+              onClick={() => navigateWeek('next')}
+              className="p-2 hover:bg-slate-50 border-l border-slate-300 text-slate-600"
+              title={t('common.nextWeek') || 'Next Week'}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
         </div>
       </div>
 

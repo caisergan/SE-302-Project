@@ -14,7 +14,10 @@
         "loading": "Loading...",
         "success": "Success",
         "error": "Error",
-        "confirm": "Confirm"
+        "confirm": "Confirm",
+        "previousWeek": "Previous Week",
+        "nextWeek": "Next Week",
+        "today": "Today"
     },
     "dashboard": {
         "title": "Dashboard",
@@ -93,8 +96,8 @@
         "title": "Schedule View",
         "export": "Export",
         "exportExcel": "Export to Excel",
-        "filterCourse": "Filter By Course",
-        "filterClassroom": "Filter by Classroom",
+        "filterCourse": "Course",
+        "filterClassroom": "Classroom",
         "allCourses": "All Courses",
         "allClassrooms": "All Classrooms",
         "time": "Time",
@@ -103,8 +106,8 @@
         "students": "Students",
         "goToDashboard": "Go to the Dashboard to run the generator.",
         "filterAll": "All",
-        "filterRoom": "Filter By Room",
-        "filterStudent": "Filter By Student",
+        "filterRoom": "Room",
+        "filterStudent": "Student",
         "capacityShort": "Cap: {{capacity}}"
     },
     "settings": {
