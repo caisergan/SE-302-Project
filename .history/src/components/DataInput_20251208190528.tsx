@@ -67,7 +67,6 @@ const EditModal: React.FC<EditModalProps> = ({ item, type, mode, onClose, onSave
                             </div>
                         </>
                     )}
-                    {/* ÖĞRENCİ DÜZENLEME KISMI GÜNCELLENDİ: Email Input Eklendi */}
                     {type === 'students' && (
                         <>
                             <div>
@@ -77,10 +76,6 @@ const EditModal: React.FC<EditModalProps> = ({ item, type, mode, onClose, onSave
                             <div>
                                 <label className="text-xs font-semibold text-slate-500 uppercase">Name</label>
                                 <input name="name" value={formData.name || ''} onChange={handleChange} className="w-full border border-slate-300 p-2 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
-                            </div>
-                            <div>
-                                <label className="text-xs font-semibold text-slate-500 uppercase">Email</label>
-                                <input name="email" value={formData.email || ''} onChange={handleChange} className="w-full border border-slate-300 p-2 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" />
                             </div>
                         </>
                     )}
@@ -106,15 +101,18 @@ export const DataInput: React.FC<DataInputProps> = ({
     const [currentItem, setCurrentItem] = useState<any>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // --- CRUD OPERATIONS (FIXED REFRESH DATA) ---
+
     const refreshData = async () => {
         try {
             if (activeTab === 'courses') {
                 const rawCourses = await window.api.getCourses();
+                // Map Backend (snake_case) -> Frontend (camelCase)
                 setCourses(rawCourses.map((c: any) => ({
                     id: c.id.toString(),
                     code: c.code,
                     name: c.name,
-                    enrolledStudents: c.enrolled_students
+                    enrolledStudents: c.enrolled_students // DB'den gelen enrolled_students
                 })));
             } 
             else if (activeTab === 'classrooms') {
@@ -128,12 +126,13 @@ export const DataInput: React.FC<DataInputProps> = ({
             } 
             else if (activeTab === 'students') {
                 const rawStudents = await window.api.getStudents();
+                // Map Backend -> Frontend
                 setStudents(rawStudents.map((s: any) => ({
                     id: s.id.toString(),
-                    studentNumber: s.student_number,
+                    studentNumber: s.student_number, // DB: student_number -> UI: studentNumber
                     name: s.name,
-                    email: s.email || `${s.student_number}@uni.edu`, // Email yoksa oluştur, varsa kullan
-                    enrolledCourses: s.enrolled_courses || []
+                    email: `${s.student_number}@uni.edu`,
+                    enrolledCourses: s.enrolled_courses || [] // undefined kontrolü
                 })));
             }
         } catch (error) {
@@ -167,7 +166,7 @@ export const DataInput: React.FC<DataInputProps> = ({
     const handleDelete = async (id: number | string) => {
         if (!confirm(t('common.confirmDelete', 'Are you sure you want to delete this item?'))) return;
         try {
-            const numId = Number(id);
+            const numId = Number(id); // Ensure ID is number for backend
             if (activeTab === 'courses') await window.api.deleteCourse(numId);
             else if (activeTab === 'classrooms') await window.api.deleteClassroom(numId);
             else if (activeTab === 'students') await window.api.deleteStudent(numId);
@@ -190,57 +189,27 @@ export const DataInput: React.FC<DataInputProps> = ({
             complete: async (results) => {
                 try {
                     const data = results.data;
-                    
                     if (activeTab === 'courses') {
                         const formatted = data.map((row: any) => ({
-                            code: row.code?.trim(),
-                            name: row.name?.trim(),
-                            enrolledStudents: 0
-                        })).filter((c: any) => c.code && c.name);
-
+                            code: row.code, name: row.name, enrolledStudents: parseInt(row.enrolledStudents || '0')
+                        }));
                         await window.api.addCoursesBulk(formatted);
-                        showNotification(t('dataInput.importSuccess', 'Courses imported'), 'success');
-                    } 
-                    else if (activeTab === 'classrooms') {
+                    } else if (activeTab === 'classrooms') {
                         const formatted = data.map((row: any) => ({
-                            name: row.name?.trim(),
-                            capacity: parseInt(row.capacity || '0'),
-                            building: row.building?.trim()
-                        })).filter((r: any) => r.name);
-
+                            name: row.name, capacity: parseInt(row.capacity || '0'), building: row.building
+                        }));
                         await window.api.addClassroomsBulk(formatted);
-                        showNotification(t('dataInput.importSuccess', 'Classrooms imported'), 'success');
-                    } 
-                    else if (activeTab === 'students') {
-                        const formatted = data.map((row: any) => {
-                            let courses: string[] = [];
-                            if (row.enrolledCourses) {
-                                courses = row.enrolledCourses
-                                    .split(/[;,]+/) 
-                                    .map((c: string) => c.trim()) 
-                                    .filter((c: string) => c.length > 0);
-                            }
-
-                            return {
-                                studentNumber: row.studentNumber?.trim(),
-                                name: row.name?.trim(),
-                                // Varsa CSV'den al, yoksa boş (refreshData'da uydurulacak)
-                                email: row.email?.trim() || "", 
-                                enrolledCourses: courses
-                            };
-                        }).filter((s: any) => s.studentNumber && s.name);
-
+                    } else if (activeTab === 'students') {
+                        const formatted = data.map((row: any) => ({
+                            studentNumber: row.studentNumber, name: row.name, enrolledCourses: row.enrolledCourses ? row.enrolledCourses.split(';') : []
+                        }));
                         await window.api.addStudentsBulk(formatted);
-                        showNotification(t('dataInput.importSuccess', 'Students imported & enrolled'), 'success');
                     }
-                    
                     await refreshData();
-                    
+                    showNotification(t('dataInput.importSuccess', 'Import successful'), 'success');
                 } catch (error) {
-                    console.error("CSV Import Hatası:", error);
                     showNotification(t('dataInput.importError', 'Error importing file'), 'error');
                 }
-                
                 if (fileInputRef.current) fileInputRef.current.value = '';
             }
         });
@@ -303,8 +272,7 @@ export const DataInput: React.FC<DataInputProps> = ({
                             <tr>
                                 {activeTab === 'courses' && <><th className="px-6 py-3">Code</th><th className="px-6 py-3">Name</th><th className="px-6 py-3">Enrolled</th></>}
                                 {activeTab === 'classrooms' && <><th className="px-6 py-3">Name</th><th className="px-6 py-3">Capacity</th><th className="px-6 py-3">Building</th></>}
-                                {/* ÖĞRENCİ BAŞLIĞINA EMAIL EKLENDİ */}
-                                {activeTab === 'students' && <><th className="px-6 py-3">Student #</th><th className="px-6 py-3">Name</th><th className="px-6 py-3">Email</th><th className="px-6 py-3">Courses</th></>}
+                                {activeTab === 'students' && <><th className="px-6 py-3">Student #</th><th className="px-6 py-3">Name</th><th className="px-6 py-3">Courses</th></>}
                                 <th className="px-6 py-3 text-right">Actions</th>
                             </tr>
                         </thead>
@@ -331,12 +299,10 @@ export const DataInput: React.FC<DataInputProps> = ({
                                     </td>
                                 </tr>
                             ))}
-                            {/* ÖĞRENCİ TABLOSUNA EMAIL EKLENDİ */}
                             {activeTab === 'students' && students.map((student) => (
                                 <tr key={student.id} className="hover:bg-slate-50/50 group">
                                     <td className="px-6 py-3 font-mono text-slate-600">{student.studentNumber}</td>
                                     <td className="px-6 py-3 font-medium text-slate-900">{student.name}</td>
-                                    <td className="px-6 py-3 text-slate-600">{student.email}</td>
                                     <td className="px-6 py-3 text-slate-600">{student.enrolledCourses.length}</td>
                                     <td className="px-6 py-3 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button onClick={() => openEdit(student)} className="p-1 text-indigo-600 hover:bg-indigo-50 rounded"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
