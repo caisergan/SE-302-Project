@@ -30,7 +30,6 @@ export interface Classroom {
 export interface Student {
   id: string;
   name: string;
-  studentNumber : string;
   email: string;
   enrolledCourses: string[]; // Array of Course IDs
 }

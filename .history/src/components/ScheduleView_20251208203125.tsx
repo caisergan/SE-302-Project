@@ -49,17 +49,16 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
     });
   }, [weekStart]);
 
-  // --- CSV DIŞA AKTARMA (GÜNCELLENDİ: SIRA NUMARASI EKLENDİ) ---
+  // --- CSV DIŞA AKTARMA (EXPORT) ---
   const handleExport = () => {
     if (schedule.length === 0) {
       alert("No schedule generated to export.");
       return;
     }
 
-    // Başlıklar: Session ID yerine "No" geldi
-    const headers = ["No", "Course Code", "Course Name", "Classroom", "Date", "Start Time", "End Time"];
+    const headers = ["Session ID", "Course Code", "Course Name", "Classroom", "Date", "Start Time", "End Time"];
 
-    const rows = schedule.map((session, index) => {
+    const rows = schedule.map(session => {
       const course = courses.find(c => String(c.id) === String(session.courseId));
       const room = classrooms.find(r => String(r.id) === String(session.classroomId));
       
@@ -67,7 +66,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
       const end = new Date(session.endTime);
 
       return [
-        index + 1, // 1, 2, 3 diye giden sıra numarası
+        session.id,
         course?.code || "Unknown",
         course?.name || "Unknown",
         room?.name || "Unknown",
@@ -90,7 +89,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
     document.body.removeChild(link);
   };
 
-  // --- FİLTRELEME MANTIĞI ---
+  // --- GELİŞMİŞ FİLTRELEME ---
   const filteredSessions = useMemo(() => {
     if (filterMode === 'all') return schedule;
     if (!selectedEntityId) return [];
@@ -191,7 +190,6 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
                   <option key={c.id} value={String(c.id)}>{c.code}: {c.name}</option>
                 ))}
                 {filterMode === 'student' && students.map(s => (
-                  // studentNumber kullanımı için types.ts güncel olmalı
                   <option key={s.id} value={String(s.id)}>{s.name} ({s.studentNumber})</option>
                 ))}
               </select>
@@ -265,11 +263,11 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
                         style={{ 
                             top: `${top}px`, 
                             height: `${height}px`, 
-                            backgroundColor: 'rgba(239, 246, 255, 0.85)', // Hafif Şeffaf
+                            backgroundColor: 'rgba(239, 246, 255, 0.85)', // Hafif Şeffaf (Arkası görünsün diye)
                             borderLeft: '4px solid #6366f1', 
                             border: '1px solid #e2e8f0', 
                             borderLeftWidth: '4px',
-                            width: '90%', // Genişlik %90
+                            width: '90%', // Genişlik %90 (Üst üste binmeyi görmek için)
                             zIndex: 10
                         }}>
                         <div className="p-2 h-full flex flex-col">

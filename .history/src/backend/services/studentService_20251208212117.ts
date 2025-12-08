@@ -55,7 +55,7 @@ export const deleteStudent = (id: number): void => {
 export const clearStudents = (): void => {
     db.prepare('DELETE FROM students').run();
 };
-
+// src/backend/services/studentService.ts dosyasının en altına ekle:
 
 export const addEnrollmentsBulk = (enrollments: { studentNumber: string; courseCode: string }[]): void => {
     const getStudentId = db.prepare('SELECT id FROM students WHERE student_number = ?');
