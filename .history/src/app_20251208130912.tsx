@@ -28,25 +28,24 @@ const App: React.FC = () => {
         const savedStudents = await window.api.getStudents();
 
         setCourses(savedCourses.map((c: any) => ({
-          id: c.id.toString(), // ID'lerin string olmasını garantiye alıyoruz
+          id: c.code,
           code: c.code,
           name: c.name,
           enrolledStudents: c.enrolled_students
         })));
 
         setClassrooms(savedClassrooms.map((r: any) => ({
-          id: r.id.toString(),
+          id: r.name,
           name: r.name,
           capacity: r.capacity,
           building: r.building
         })));
 
         setStudents(savedStudents.map((s: any) => ({
-          id: s.id.toString(), // DB ID'si
-          studentNumber: s.student_number, // Öğrenci Numarası
+          id: s.student_number,
           name: s.name,
           email: `${s.student_number.toLowerCase()}@uni.edu`,
-          enrolledCourses: s.enrolled_courses || []
+          enrolledCourses: s.enrolled_courses
         })));
       } catch (error) {
         console.error("Failed to load data:", error);
@@ -78,39 +77,57 @@ const App: React.FC = () => {
     setShowConstraintModal(true);
   };
 
-  // --- GÜNCELLENEN KISIM: Backend Algoritmasını Çağırır ---
-  const handleFinalizeSchedule = async (constraints: GenerationConstraints) => {
+  const handleFinalizeSchedule = (constraints: GenerationConstraints) => {
     setShowConstraintModal(false);
+    const newSchedule: ExamSession[] = [];
+    let currentDate = new Date(constraints.startDate);
+    const endDate = new Date(constraints.endDate);
 
-    try {
-      // 1. Backend'deki algoritmayı tetikle
-      const result = await window.api.generateSchedule(constraints);
+    const [startHour, startMinute] = constraints.dailyStartTime.split(':').map(Number);
+    const [endHour, endMinute] = constraints.dailyEndTime.split(':').map(Number);
 
-      if (result.success && result.data) {
-        // 2. JSON serileştirmesi yüzünden String gelen tarihleri Date objesine çevir
-        const parsedSchedule = result.data.map((s: any) => ({
-          ...s,
-          startTime: new Date(s.startTime),
-          endTime: new Date(s.endTime)
-        }));
+    let currentCourseIndex = 0;
 
-        // 3. State'i güncelle ve Takvim'i göster
-        setSchedule(parsedSchedule);
-        setIsGenerated(true);
-        setCurrentView(ViewMode.SCHEDULE);
-        
-        // Konsola bilgi bas (Debugging için)
-        console.log(`Schedule generated successfully with ${parsedSchedule.length} sessions.`);
-      } else {
-        // FR13: Çözüm bulunamazsa veya hata varsa kullanıcıya bildir
-        alert(result.error || "No solution found due to constraints (e.g., room capacity or time slots).");
+    while (currentDate <= endDate && currentCourseIndex < courses.length) {
+      const dayOfWeek = currentDate.getDay();
+      if (!constraints.includeWeekends && (dayOfWeek === 0 || dayOfWeek === 6)) {
+        currentDate.setDate(currentDate.getDate() + 1);
+        continue;
       }
-    } catch (error) {
-      console.error("Generation error:", error);
-      alert("An unexpected error occurred while generating the schedule.");
+
+      currentDate.setHours(startHour, startMinute, 0, 0);
+
+      const dayEnd = new Date(currentDate);
+      dayEnd.setHours(endHour, endMinute, 0, 0);
+
+      let dailySessionCount = 0;
+
+      while (currentDate.getTime() + 2 * 60 * 60 * 1000 <= dayEnd.getTime() && currentCourseIndex < courses.length) {
+        const course = courses[currentCourseIndex];
+        const room = classrooms[currentCourseIndex % classrooms.length];
+
+        newSchedule.push({
+          id: `sess-${currentCourseIndex}`,
+          courseId: course.id,
+          classroomId: room.id,
+          startTime: new Date(currentDate),
+          endTime: new Date(currentDate.getTime() + 2 * 60 * 60 * 1000),
+        });
+
+        currentCourseIndex++;
+        dailySessionCount++;
+
+        currentDate.setHours(currentDate.getHours() + 3);
+      }
+
+      currentDate = new Date(currentDate);
+      currentDate.setDate(currentDate.getDate() + 1);
     }
+
+    setSchedule(newSchedule);
+    setIsGenerated(true);
+    setCurrentView(ViewMode.SCHEDULE);
   };
-  // ---------------------------------------------------------
 
   const renderContent = () => {
     switch (currentView) {

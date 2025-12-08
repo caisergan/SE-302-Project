@@ -9,7 +9,6 @@ contextBridge.exposeInMainWorld('api', {
     deleteCourse: (id: number) => ipcRenderer.invoke('delete-course', id),
     addCoursesBulk: (courses: any[]) => ipcRenderer.invoke('add-courses-bulk', courses),
     clearCourses: () => ipcRenderer.invoke('clear-courses'),
-    
 
     // --- Classrooms ---
     getClassrooms: () => ipcRenderer.invoke('get-classrooms'),
@@ -25,6 +24,4 @@ contextBridge.exposeInMainWorld('api', {
     updateStudent: (student: any) => ipcRenderer.invoke('update-student', student),
     deleteStudent: (id: number) => ipcRenderer.invoke('delete-student', id),
     clearStudents: () => ipcRenderer.invoke('clear-students'),
-    // ... diğerleri ...
-generateSchedule: (constraints: any) => ipcRenderer.invoke('generate-schedule', constraints),
 });

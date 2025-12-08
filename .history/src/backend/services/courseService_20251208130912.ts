@@ -27,17 +27,6 @@ export const addCourse = (code: string, name: string, enrolledStudents: number):
     return info.lastInsertRowid;
 };
 
-export const updateCourse = (id: number, code: string, name: string): void => {
-    const stmt = db.prepare('UPDATE courses SET code = ?, name = ? WHERE id = ?');
-    stmt.run(code, name, id);
-};
-
-export const deleteCourse = (id: number): void => {
-    // Enrollments tablosunda ON DELETE CASCADE olduğu için kayıtlar oradan da silinir
-    const stmt = db.prepare('DELETE FROM courses WHERE id = ?');
-    stmt.run(id);
-};
-
 export const addCoursesBulk = (courses: { code: string; name: string; enrolledStudents: number }[]): void => {
     const insert = db.prepare('INSERT INTO courses (code, name, enrolled_students) VALUES (@code, @name, @enrolledStudents)');
     const insertMany = db.transaction((courses) => {
@@ -48,5 +37,11 @@ export const addCoursesBulk = (courses: { code: string; name: string; enrolledSt
 
 export const clearCourses = (): void => {
     db.prepare('DELETE FROM courses').run();
+    // Also clear enrollments as they depend on courses
     db.prepare('DELETE FROM enrollments').run();
+};
+
+export const enrollStudent = (courseId: number, studentId: number): void => {
+    const stmt = db.prepare('INSERT OR IGNORE INTO enrollments (course_id, student_id) VALUES (?, ?)');
+    stmt.run(courseId, studentId);
 };
