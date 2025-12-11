@@ -6,6 +6,7 @@ import { DataInput } from './components/DataInput';
 import { ScheduleView } from './components/ScheduleView';
 import { Settings } from './components/Settings';
 import { ConstraintSelector } from './components/ConstraintSelector';
+import { HelpModal } from './components/HelpModal';
 import { ViewMode, Course, Classroom, Student, ExamSession, GenerationConstraints } from './types';
 import { NotificationProvider } from './context/NotificationContext';
 
@@ -19,6 +20,7 @@ const App: React.FC = () => {
   const [schedule, setSchedule] = useState<ExamSession[]>([]);
   const [isGenerated, setIsGenerated] = useState(false);
   const [showConstraintModal, setShowConstraintModal] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -73,60 +75,66 @@ const App: React.FC = () => {
     };
   }, []);
 
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+
   const handleGenerateSchedule = () => {
     setShowConstraintModal(true);
+    setGenerationError(null);
   };
 
-  const handleFinalizeSchedule = (constraints: GenerationConstraints) => {
+  const handleFinalizeSchedule = async (constraints: GenerationConstraints) => {
     setShowConstraintModal(false);
-    const newSchedule: ExamSession[] = [];
-    let currentDate = new Date(constraints.startDate);
-    const endDate = new Date(constraints.endDate);
+    setIsGenerating(true);
+    setGenerationError(null);
 
-    const [startHour, startMinute] = constraints.dailyStartTime.split(':').map(Number);
-    const [endHour, endMinute] = constraints.dailyEndTime.split(':').map(Number);
+    try {
+      // Call the real scheduling algorithm via IPC
+      const result = await window.api.generateSchedule({
+        startDate: constraints.startDate.toISOString(),
+        endDate: constraints.endDate.toISOString(),
+        includeWeekends: constraints.includeWeekends,
+        dailyStartTime: constraints.dailyStartTime,
+        dailyEndTime: constraints.dailyEndTime,
+      });
 
-    let currentCourseIndex = 0;
+      if (result.success) {
+        // Convert ISO date strings back to Date objects
+        const scheduleWithDates = result.schedule.map((session: any) => ({
+          ...session,
+          startTime: new Date(session.startTime),
+          endTime: new Date(session.endTime),
+        }));
 
-    while (currentDate <= endDate && currentCourseIndex < courses.length) {
-      const dayOfWeek = currentDate.getDay();
-      if (!constraints.includeWeekends && (dayOfWeek === 0 || dayOfWeek === 6)) {
-        currentDate.setDate(currentDate.getDate() + 1);
-        continue;
+        setSchedule(scheduleWithDates);
+        setIsGenerated(true);
+        setCurrentView(ViewMode.SCHEDULE);
+
+        // Auto-save the generated schedule to database
+        const sessionsForSave = result.schedule.map((s: any) => ({
+          sessionId: s.id,
+          courseCode: s.courseId,
+          classroomName: s.classroomId,
+          startTime: typeof s.startTime === 'string' ? s.startTime : s.startTime.toISOString(),
+          endTime: typeof s.endTime === 'string' ? s.endTime : s.endTime.toISOString(),
+        }));
+        await window.api.saveSchedule(sessionsForSave);
+
+        console.log(`Schedule generated and saved successfully in ${result.stats?.generationTimeMs}ms`);
+      } else {
+        // No valid schedule found
+        setGenerationError(result.message);
+        setIsGenerated(false);
+        console.error('Schedule generation failed:', result.message);
       }
-
-      currentDate.setHours(startHour, startMinute, 0, 0);
-
-      const dayEnd = new Date(currentDate);
-      dayEnd.setHours(endHour, endMinute, 0, 0);
-
-      let dailySessionCount = 0;
-
-      while (currentDate.getTime() + 2 * 60 * 60 * 1000 <= dayEnd.getTime() && currentCourseIndex < courses.length) {
-        const course = courses[currentCourseIndex];
-        const room = classrooms[currentCourseIndex % classrooms.length];
-
-        newSchedule.push({
-          id: `sess-${currentCourseIndex}`,
-          courseId: course.id,
-          classroomId: room.id,
-          startTime: new Date(currentDate),
-          endTime: new Date(currentDate.getTime() + 2 * 60 * 60 * 1000),
-        });
-
-        currentCourseIndex++;
-        dailySessionCount++;
-
-        currentDate.setHours(currentDate.getHours() + 3);
-      }
-
-      currentDate = new Date(currentDate);
-      currentDate.setDate(currentDate.getDate() + 1);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setGenerationError(errorMessage);
+      setIsGenerated(false);
+      console.error('Schedule generation error:', error);
+    } finally {
+      setIsGenerating(false);
     }
-
-    setSchedule(newSchedule);
-    setIsGenerated(true);
-    setCurrentView(ViewMode.SCHEDULE);
   };
 
   const renderContent = () => {
@@ -139,6 +147,8 @@ const App: React.FC = () => {
             students={students}
             schedule={schedule}
             isGenerated={isGenerated}
+            isGenerating={isGenerating}
+            generationError={generationError}
             onGenerate={handleGenerateSchedule}
           />
         );
@@ -178,6 +188,15 @@ const App: React.FC = () => {
               {currentView === ViewMode.SCHEDULE && t('common.scheduleView')}
               {currentView === ViewMode.SETTINGS && t('common.settings')}
             </h1>
+            <button
+              onClick={() => setShowHelpModal(true)}
+              className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+              title={t('help.title') || 'Help'}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </button>
           </header>
           <div className="flex-1 overflow-auto p-6 relative">
             {renderContent()}
@@ -190,6 +209,9 @@ const App: React.FC = () => {
               onGenerate={handleFinalizeSchedule}
             />
           )}
+
+          {/* Help Modal */}
+          <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
         </main>
       </div>
     </NotificationProvider>

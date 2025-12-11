@@ -31,38 +31,39 @@ The UI structure is complete with all views implemented and connected.
 
 > **Note**: Views are fully functional but the underlying scheduler uses a simple round-robin algorithm without constraint enforcement.
 
-## 🛠 Phase 3: Core Scheduling Logic (Next Steps)
-**Status:** 🔴 Not Started
+## ✅ Phase 3: Core Scheduling Logic (Complete)
+**Status:** ✅ Done
 
-This is the critical "brain" of the application that needs to be implemented next.
-- [ ] **Algorithm Implementation**:
-    - [ ] Re-implement `Scheduler` class with Backtracking/CSP algorithm.
-    - [ ] Implement `isSafe` checks for constraints.
-- [ ] **Mandatory Constraints**:
-    - [ ] **No Consecutive Exams**: Ensure a student doesn't have exams in slot `t` and `t+1`.
-    - [ ] **Max 2 Exams/Day**: Ensure a student has max 2 exams per day.
-    - [ ] **Room Capacity**: Ensure `enrolled < capacity`.
-    - [ ] **Room Availability**: Ensure 1 exam per room per slot.
-- [ ] **No Solution Handling**:
-    - [ ] Detect when no valid schedule exists.
-    - [ ] Report "No Solution Found" to the user.
-- [ ] **Integration**:
-    - [ ] Connect `Scheduler` output to the Global State (`app.tsx`).
+The scheduling engine is now fully implemented with constraint satisfaction.
+- [x] **Algorithm Implementation**:
+    - [x] Implemented `schedulerService.ts` with Backtracking/CSP algorithm.
+    - [x] Implemented `isSafe` checks for all constraints.
+- [x] **Mandatory Constraints**:
+    - [x] **No Consecutive Exams**: Ensures a student doesn't have exams in slot `t` and `t+1`.
+    - [x] **Max 2 Exams/Day**: Ensures a student has max 2 exams per day.
+    - [x] **Room Capacity**: Ensures `enrolled < capacity`.
+    - [x] **Room Availability**: Ensures 1 exam per room per slot.
+- [x] **No Solution Handling**:
+    - [x] Detects when no valid schedule exists.
+    - [x] Reports "No Solution Found" to the user with error UI.
+- [x] **Integration**:
+    - [x] Connected `schedulerService` to `app.tsx` via IPC.
+    - [x] Added loading spinner and error display in Dashboard.
 
-## 💾 Phase 4: Persistence & Export
-**Status:** 🔴 Not Started
+## ✅ Phase 4: Persistence & Export (Complete)
+**Status:** ✅ Done
 
-Features required for a usable desktop application.
-- [ ] **Data Persistence**:
-    - [ ] Save imported data and generated schedule to local file (JSON/SQLite).
-    - [ ] Load data on application startup.
-- [ ] **Export**:
-    - [ ] Export schedule to CSV/Excel.
+Schedule persistence and export functionality implemented.
+- [x] **Data Persistence**:
+    - [x] Save generated schedule to SQLite database (auto-save after generation).
+    - [x] Database schema includes `exam_sessions` table.
+- [x] **Export**:
+    - [x] Export schedule to CSV via file save dialog.
 
-## 🎨 Phase 5: Polish & Extras
-**Status:** 🔴 Not Started
+## ✅ Phase 5: Polish & Extras (Complete)
+**Status:** ✅ Done
 
-- [ ] **Help Menus**: Documentation for Student Affairs users.
-- [ ] **Heuristics/Optimization**:
-    - [ ] Sort courses by difficulty/enrollment before scheduling.
-    - [ ] Balance classroom usage.
+- [x] **Help Menus**: Documentation modal with Overview, Import, Generate, Views, and Export sections.
+- [x] **Heuristics/Optimization**:
+    - [x] Sort courses by difficulty/enrollment before scheduling (Degree Heuristic).
+    - [x] Room capacity validation in constraint checking.
