@@ -13,5 +13,18 @@ contextBridge.exposeInMainWorld('api', {
     getStudents: () => ipcRenderer.invoke('get-students'),
     addStudentsBulk: (students: any[]) => ipcRenderer.invoke('add-students-bulk', students),
     clearStudents: () => ipcRenderer.invoke('clear-students'),
+
+    // Scheduler API
+    generateSchedule: (constraints: any) => ipcRenderer.invoke('generate-schedule', constraints),
+    validateSchedule: (schedule: any[]) => ipcRenderer.invoke('validate-schedule', schedule),
+
+    // Schedule Persistence & Export API
+    saveSchedule: (sessions: any[]) => ipcRenderer.invoke('save-schedule', sessions),
+    loadSchedule: () => ipcRenderer.invoke('load-schedule'),
+    hasSchedule: () => ipcRenderer.invoke('has-schedule'),
+    clearSchedule: () => ipcRenderer.invoke('clear-schedule'),
+    exportScheduleCSV: (data: any) => ipcRenderer.invoke('export-schedule-csv', data),
 });
+
+
 
