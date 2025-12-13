@@ -3,6 +3,7 @@ import { MakerSquirrel } from '@electron-forge/maker-squirrel';
 import { MakerZIP } from '@electron-forge/maker-zip';
 import { MakerDeb } from '@electron-forge/maker-deb';
 import { MakerRpm } from '@electron-forge/maker-rpm';
+import { MakerDMG } from '@electron-forge/maker-dmg';
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
@@ -13,9 +14,22 @@ const config: ForgeConfig = {
   },
   rebuildConfig: {},
   makers: [
-    new MakerSquirrel({}),
+    // Windows EXE Installer
+    new MakerSquirrel({
+      name: 'SchedulR',
+      authors: 'Team5',
+      description: 'Desktop application for automated exam scheduling',
+      setupExe: 'SchedulR-Setup.exe',
+    }),
+    // macOS DMG Installer
+    new MakerDMG({
+      name: 'SchedulR',
+    }),
+    // macOS ZIP (fallback)
     new MakerZIP({}, ['darwin']),
+    // Linux RPM
     new MakerRpm({}),
+    // Linux DEB
     new MakerDeb({}),
   ],
   plugins: [
