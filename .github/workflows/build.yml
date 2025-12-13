@@ -60,16 +60,23 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-          merge-multiple: true
 
-      - name: List artifacts
-        run: find artifacts -type f
+      - name: List all artifact files
+        run: |
+          echo "=== All files in artifacts ==="
+          find artifacts -type f
+          echo "=== Looking for installers ==="
+          find artifacts -type f \( -name "*.exe" -o -name "*.dmg" -o -name "*.zip" \)
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/*
+          files: |
+            artifacts/**/*.exe
+            artifacts/**/*.dmg
+            artifacts/**/*.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
