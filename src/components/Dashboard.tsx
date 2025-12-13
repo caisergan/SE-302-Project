@@ -12,6 +12,7 @@ interface DashboardProps {
   onGenerate: () => void;
 }
 
+
 export const Dashboard: React.FC<DashboardProps> = ({
   courses, classrooms, students, schedule, isGenerated, onGenerate
 }) => {

@@ -21,7 +21,6 @@ export const exportScheduleToCSV = async (data: ExportData) => {
         const rows = [];
 
         for (const session of data.sessions) {
-            // ID eşleşmesi (Hem Id hem Code kontrolü)
             const cId = session.courseId || session.courseCode;
             const rId = session.classroomId || session.classroomName;
 
@@ -34,21 +33,15 @@ export const exportScheduleToCSV = async (data: ExportData) => {
             const endStr = new Date(session.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
             // ÖĞRENCİ SAYISI (KESİN ÇÖZÜM)
-            // Önce Scheduler'ın hesaplayıp session'a gömdüğü veriye bakıyoruz.
-            // Bulamazsa course nesnesine bakıyoruz.
-            let count = session.studentCount;
-            
-            if (!count && course) {
-                if (typeof course.enrolledStudents === 'number') count = course.enrolledStudents;
-                else if (Array.isArray(course.students)) count = course.students.length;
-                else if (Array.isArray(course.enrolled_students)) count = course.enrolled_students.length;
-            }
+            // Scheduler'dan gelen veriyi kullanıyoruz.
+            // Eğer session.studentCount undefined geliyorsa, interface veya taşıma sorunu vardır.
+            const studentCount = session.studentCount !== undefined ? session.studentCount : (course?.enrolledStudents || 0);
 
             const row = [
                 course?.code || cId,
                 course?.name || "Unknown",
                 room?.name || rId,
-                count || 0, // Sayı yoksa 0 yaz
+                studentCount, // 👈 Burası artık dolu gelecek
                 dateStr,
                 startStr,
                 endStr
@@ -58,7 +51,6 @@ export const exportScheduleToCSV = async (data: ExportData) => {
         }
 
         const csvContent = "\uFEFF" + [headers.join(";"), ...rows].join("\n"); 
-        
         fs.writeFileSync(filePath, csvContent, 'utf-8');
 
         return { success: true, message: 'Schedule exported successfully!' };

@@ -41,6 +41,7 @@ export interface ExamSession {
   classroomId: string;
   startTime: Date;
   endTime: Date;
+  studentCount?: number;
 }
 
 export interface DataContextType {
