@@ -9,7 +9,7 @@ interface SchedulerInput {
 }
 
 export const generateSchedule = (input: SchedulerInput): ExamSession[] => {
-    console.log("🔒 Strict (Sıfır Çakışma) Algoritması Çalışıyor...");
+    console.log("🔒 Student Limit Mode (Max 2 Sınav/Gün) Çalışıyor...");
     const { courses, classrooms, students, constraints } = input;
     const schedule: ExamSession[] = [];
 
@@ -17,7 +17,7 @@ export const generateSchedule = (input: SchedulerInput): ExamSession[] => {
     const timeSlots = generateTimeSlots(constraints);
     if (timeSlots.length === 0) throw new Error("Uygun saat yok. Tarih aralığını genişletin.");
 
-    // 2. VERİ YAPILARI (Hızlı Erişim)
+    // 2. ÖĞRENCİ-DERS EŞLEŞTİRMESİ
     const courseStudents = new Map<string, Set<string>>();
     students.forEach(s => {
         const sId = String((s as any).studentNumber || s.id);
@@ -28,27 +28,34 @@ export const generateSchedule = (input: SchedulerInput): ExamSession[] => {
         });
     });
 
-    // 3. DERSLERİ SIRALA (En kalabalık dersi en önce yerleştir - Zorluk Derecesine Göre)
-    let remainingCourses = [...courses]
-        .filter(c => c.enrolledStudents > 0)
-        .sort((a, b) => b.enrolledStudents - a.enrolledStudents);
+    // 3. DERSLERİ HAZIRLA
+    // (Öğrenci sayısını hesapla ve ona göre sırala)
+    let remainingCourses = [...courses].map(c => {
+        const realCount = courseStudents.get(c.code.trim())?.size || 0;
+        return { ...c, enrolledStudents: realCount };
+    })
+    .filter(c => c.enrolledStudents > 0)
+    .sort((a, b) => b.enrolledStudents - a.enrolledStudents);
 
-    // Takipçiler
+    // TAKİPÇİLER
     const studentBusySlots = new Map<string, Set<number>>();
+    
+    // 👇 GERİ EKLENDİ: Öğrencinin o gün kaç sınava girdiğini tutar
     const studentDailyCounts = new Map<string, Map<string, number>>();
     
-    // ODA KULLANIM SAYACI (Dengeli Dağıtım İçin)
+    // Oda Kullanım Sayacı
     const roomUsageCounts = new Map<string, number>();
     classrooms.forEach(r => roomUsageCounts.set(r.id.toString(), 0));
 
-    // 4. ANA DÖNGÜ (Zaman Öncelikli)
+    // 4. ANA DÖNGÜ
     for (let tIndex = 0; tIndex < timeSlots.length; tIndex++) {
         if (remainingCourses.length === 0) break;
         const slot = timeSlots[tIndex];
-        const dateKey = slot.start.toDateString();
+        
+        // 👇 Tarih anahtarı (Günlük limit kontrolü için gerekli)
+        const dateKey = slot.start.toDateString(); 
 
-        // BU SLOTTA KULLANILABİLİR ODALAR
-        // (Kullanım sayısına göre sıralı - Load Balancing)
+        // Odaları sırala (Dengeleme)
         let availableRooms = [...classrooms].sort((a, b) => {
             const usageA = roomUsageCounts.get(a.id.toString()) || 0;
             const usageB = roomUsageCounts.get(b.id.toString()) || 0;
@@ -56,39 +63,37 @@ export const generateSchedule = (input: SchedulerInput): ExamSession[] => {
             return a.capacity - b.capacity;
         });
 
-        // Bu slotta meşgul olan öğrenciler (Anlık Çakışma Kontrolü için)
         const studentsBusyInThisSlot = new Set<string>();
-        
         const nextLoopCourses: Course[] = [];
 
         for (const course of remainingCourses) {
-            // 1. ODA VAR MI?
+            // A. ODA KONTROLÜ
             const roomIndex = availableRooms.findIndex(r => r.capacity >= course.enrolledStudents);
             if (roomIndex === -1) {
-                nextLoopCourses.push(course); // Oda yetmedi, sonraya bırak
+                nextLoopCourses.push(course);
                 continue;
             }
 
-            // 2. ÇAKIŞMA KONTROLÜ (KESİN KURAL)
+            // B. ÇAKIŞMA KONTROLÜ
             const enrolledIds = courseStudents.get(course.code.trim());
             let isConflict = false;
 
             if (enrolledIds) {
                 for (const sId of enrolledIds) {
-                    // KURAL 1: Öğrenci şu an başka bir sınavda mı?
+                    // KURAL 1: Anlık Çakışma (Aynı saatte başka sınavı var mı?)
                     if (studentsBusyInThisSlot.has(sId)) { 
                         isConflict = true; 
                         break; 
                     }
                     
-                    // KURAL 2: Öğrenci bir önceki saatte sınavda mıydı? (Ardışık Sınav Engelleyici)
-                    // (İsteğe bağlı: Eğer ardışık sınava izin veriyorsanız bu if'i kaldırın)
+                    // KURAL 2: Ardışık Sınav (Bir önceki slotta sınavı var mıydı?)
+                    // İstersen bunu kaldırabilirsin ama genelde istenir.
                     if (studentBusySlots.get(sId)?.has(tIndex - 1)) { 
                         isConflict = true; 
                         break; 
                     }
 
-                    // KURAL 3: Günlük Maksimum Sınav Limiti (Örn: Günde en fazla 2 sınav)
+                    // 👇 GERİ EKLENDİ: KURAL 3 - GÜNLÜK MAX 2 SINAV
                     const dailyExams = studentDailyCounts.get(sId)?.get(dateKey) || 0;
                     if (dailyExams >= 2) { 
                         isConflict = true; 
@@ -97,37 +102,41 @@ export const generateSchedule = (input: SchedulerInput): ExamSession[] => {
                 }
             }
 
-            // Eğer tek bir öğrenci bile çakışıyorsa, bu dersi bu saate KOYMA.
             if (isConflict) {
-                nextLoopCourses.push(course);
+                nextLoopCourses.push(course); // Çakışma varsa sonraki tura bırak
                 continue;
             }
 
-            // ✅ YERLEŞTİRME BAŞARILI
+            // C. YERLEŞTİRME BAŞARILI
             const assignedRoom = availableRooms[roomIndex];
+            
             schedule.push({
                 id: crypto.randomUUID(),
                 courseId: course.id.toString(),
                 classroomId: assignedRoom.id.toString(),
                 startTime: slot.start,
-                endTime: slot.end
+                endTime: slot.end,
+                // @ts-ignore
+                studentCount: course.enrolledStudents 
             });
 
             // Kaynakları Güncelle
-            availableRooms.splice(roomIndex, 1); // Odayı listeden düş
+            availableRooms.splice(roomIndex, 1);
             roomUsageCounts.set(assignedRoom.id.toString(), (roomUsageCounts.get(assignedRoom.id.toString()) || 0) + 1);
 
-            // Öğrenci Durumlarını Güncelle
             if (enrolledIds) {
                 for (const sId of enrolledIds) {
-                    studentsBusyInThisSlot.add(sId); // Şu an meşgul
+                    // 1. Şu an meşgul
+                    studentsBusyInThisSlot.add(sId);
                     
+                    // 2. Slot geçmişine ekle
                     if (!studentBusySlots.has(sId)) studentBusySlots.set(sId, new Set());
-                    studentBusySlots.get(sId)!.add(tIndex); // Slot geçmişine ekle
+                    studentBusySlots.get(sId)!.add(tIndex);
                     
+                    // 👇 GERİ EKLENDİ: 3. Günlük sayacı artır
                     if (!studentDailyCounts.has(sId)) studentDailyCounts.set(sId, new Map());
                     const dMap = studentDailyCounts.get(sId)!;
-                    dMap.set(dateKey, (dMap.get(dateKey) || 0) + 1); // Günlük sayacı artır
+                    dMap.set(dateKey, (dMap.get(dateKey) || 0) + 1);
                 }
             }
         }
@@ -136,16 +145,16 @@ export const generateSchedule = (input: SchedulerInput): ExamSession[] => {
 
     if (remainingCourses.length > 0) {
         throw new Error(
-            `Takvim oluşturulamadı! Aşağıdaki dersler için çakışmasız yer bulunamadı:\n` +
+            `Takvim oluşturulamadı! Aşağıdaki dersler için uygun yer bulunamadı:\n` +
             `${remainingCourses.map(c => c.code).join(", ")}\n` +
-            `Çözüm: Tarih aralığını uzatın veya öğrencilerin ders seçimlerini kontrol edin.`
+            `Çözüm: Tarih aralığını uzatın.`
         );
     }
 
     return schedule;
 };
 
-// Zaman Dilimi Oluşturucu
+// Zaman Dilimi Oluşturucu (Aynı kalıyor)
 function generateTimeSlots(constraints: GenerationConstraints) {
     const slots = [];
     const current = new Date(constraints.startDate);
@@ -154,7 +163,6 @@ function generateTimeSlots(constraints: GenerationConstraints) {
     const [eH, eM] = constraints.dailyEndTime.split(':').map(Number);
 
     while (current <= end) {
-        // Hafta sonu kontrolü
         if (!constraints.includeWeekends && (current.getDay() === 0 || current.getDay() === 6)) {
             current.setDate(current.getDate() + 1);
             continue;
@@ -168,12 +176,11 @@ function generateTimeSlots(constraints: GenerationConstraints) {
 
         while (start < dayLimit) {
             let slotEnd = new Date(start); 
-            slotEnd.setHours(start.getHours() + 2); // Sınav Süresi: 2 Saat
+            slotEnd.setHours(start.getHours() + 2); 
 
             if (slotEnd <= dayLimit) {
                 slots.push({ start: new Date(start), end: new Date(slotEnd) });
             }
-            // Bir sonraki sınav 2 saat + 15 dk sonra başlasın
             start.setMinutes(start.getMinutes() + 120 + 15); 
         }
         current.setDate(current.getDate() + 1);

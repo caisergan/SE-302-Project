@@ -9,7 +9,6 @@ interface ExportData {
 
 export const exportScheduleToCSV = async (data: ExportData) => {
     try {
-        // 1. Kullanıcıya "Nereye Kaydedeyim?" diye sor
         const { filePath } = await dialog.showSaveDialog({
             title: 'Export Schedule',
             defaultPath: 'exam_schedule.csv',
@@ -18,38 +17,48 @@ export const exportScheduleToCSV = async (data: ExportData) => {
 
         if (!filePath) return { success: false, message: 'Export cancelled' };
 
-        // 2. CSV Başlıkları
-        const headers = ["Session ID", "Course Code", "Course Name", "Classroom", "Date", "Start Time", "End Time"];
+        const headers = ["Course Code", "Course Name", "Classroom", "Student Count", "Date", "Start Time", "End Time"];
         const rows = [];
 
-        // 3. Veriyi İşle
         for (const session of data.sessions) {
-            // Frontend'den gelen ID'leri isimlerle eşleştir
-            const course = data.courses.find((c: any) => String(c.id) === String(session.courseCode)); 
-            const room = data.classrooms.find((r: any) => String(r.id) === String(session.classroomName));
+            // ID eşleşmesi (Hem Id hem Code kontrolü)
+            const cId = session.courseId || session.courseCode;
+            const rId = session.classroomId || session.classroomName;
+
+            const course = data.courses.find((c: any) => String(c.id) === String(cId)); 
+            const room = data.classrooms.find((r: any) => String(r.id) === String(rId));
             
-            // Tarih formatlama
             const dateObj = new Date(session.startTime);
             const dateStr = dateObj.toLocaleDateString();
             const startStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             const endStr = new Date(session.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-            // Satırı oluştur (CSV'de virgül sorunu olmasın diye tırnak içine alıyoruz)
+            // ÖĞRENCİ SAYISI (KESİN ÇÖZÜM)
+            // Önce Scheduler'ın hesaplayıp session'a gömdüğü veriye bakıyoruz.
+            // Bulamazsa course nesnesine bakıyoruz.
+            let count = session.studentCount;
+            
+            if (!count && course) {
+                if (typeof course.enrolledStudents === 'number') count = course.enrolledStudents;
+                else if (Array.isArray(course.students)) count = course.students.length;
+                else if (Array.isArray(course.enrolled_students)) count = course.enrolled_students.length;
+            }
+
             const row = [
-                session.sessionId,
-                course?.code || session.courseCode,
+                course?.code || cId,
                 course?.name || "Unknown",
-                room?.name || session.classroomName,
+                room?.name || rId,
+                count || 0, // Sayı yoksa 0 yaz
                 dateStr,
                 startStr,
                 endStr
-            ].map(field => `"${field}"`).join(","); // Her alanı tırnak içine al ve virgülle birleştir
+            ].map(field => `"${field}"`).join(";"); 
 
             rows.push(row);
         }
 
-        // 4. Dosyayı Yaz
-        const csvContent = [headers.join(","), ...rows].join("\n");
+        const csvContent = "\uFEFF" + [headers.join(";"), ...rows].join("\n"); 
+        
         fs.writeFileSync(filePath, csvContent, 'utf-8');
 
         return { success: true, message: 'Schedule exported successfully!' };
