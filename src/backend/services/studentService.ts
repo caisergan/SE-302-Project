@@ -1,77 +1,67 @@
 import db from '../database/db';
+import { Student } from '../../types';
 
-export interface StudentWithCourses {
-    id: number;
-    student_number: string;
-    name: string;
-    enrolled_courses: string[];
-}
+interface IdResult { id: number; }
+export interface StudentWithCourses extends Student { enrolled_courses: string[]; }
 
 export const getStudents = (): StudentWithCourses[] => {
-    // Mevcut getStudents kodunuzu koruyun, sadece bu eklemeleri yapın:
-    const studentsStmt = db.prepare('SELECT * FROM students');
-    const students = studentsStmt.all() as any[];
-
-    const enrollmentsStmt = db.prepare(`SELECT e.student_id, c.code FROM enrollments e JOIN courses c ON e.course_id = c.id`);
-    const enrollments = enrollmentsStmt.all() as any[];
-
-    const studentMap = new Map<number, StudentWithCourses>();
-    students.forEach(s => studentMap.set(s.id, { id: s.id, student_number: s.student_number, name: s.name, enrolled_courses: [] }));
-    enrollments.forEach(e => studentMap.get(e.student_id)?.enrolled_courses.push(e.code));
-
-    return Array.from(studentMap.values());
+    try {
+        const studentsStmt = db.prepare('SELECT id, student_number, name, email FROM students');
+        const coursesStmt = db.prepare(`SELECT c.code FROM courses c JOIN enrollments e ON c.id = e.course_id WHERE e.student_id = ?`);
+        return (studentsStmt.all() as any[]).map(s => ({
+            ...s, studentNumber: s.student_number,
+            enrolled_courses: (coursesStmt.all(s.id) as { code: string }[]).map(c => c.code)
+        }));
+    } catch (e) { console.error(e); return []; }
 };
 
 export const addStudentsBulk = (students: any[]): void => {
-    // Mevcut bulk ekleme kodunu koruyun (Transaction yapısını)
-    const insertStudent = db.prepare('INSERT OR IGNORE INTO students (student_number, name) VALUES (@studentNumber, @name)');
+    const insertStudent = db.prepare('INSERT OR IGNORE INTO students (student_number, name, email) VALUES (@studentNumber, @name, @email)');
     const getStudentId = db.prepare('SELECT id FROM students WHERE student_number = ?');
-    const getCourseId = db.prepare('SELECT id FROM courses WHERE code = ?');
+    const insertCourse = db.prepare('INSERT OR IGNORE INTO courses (code, name, enrolled_students) VALUES (?, ?, 0)');
+    const getCourseId = db.prepare('SELECT id FROM courses WHERE code = ? COLLATE NOCASE');
     const insertEnrollment = db.prepare('INSERT OR IGNORE INTO enrollments (course_id, student_id) VALUES (?, ?)');
 
-    const transaction = db.transaction((studentsList) => {
-        for (const s of studentsList) {
-            insertStudent.run({ studentNumber: s.studentNumber, name: s.name });
-            const studentIdResult = getStudentId.get(s.studentNumber) as { id: number } | undefined;
-            if (!studentIdResult) continue;
-            for (const code of s.enrolledCourses) {
-                const courseRes = getCourseId.get(code) as { id: number } | undefined;
-                if (courseRes) insertEnrollment.run(courseRes.id, studentIdResult.id);
+    db.transaction((list) => {
+        for (const s of list) {
+            if (!s.studentNumber) continue;
+            insertStudent.run({ studentNumber: s.studentNumber, name: s.name, email: s.email || `${s.studentNumber}@uni.edu` });
+            
+            const stdRecord = getStudentId.get(s.studentNumber) as IdResult;
+            if (!stdRecord) continue;
+
+            if (s.enrolledCourses?.length) {
+                for (const code of s.enrolledCourses) {
+                    insertCourse.run(code, code);
+                    const crsRecord = getCourseId.get(code) as IdResult;
+                    if(crsRecord) insertEnrollment.run(crsRecord.id, stdRecord.id);
+                }
             }
         }
-    });
-    transaction(students);
+    })(students);
 };
-
-export const updateStudent = (id: number, name: string): void => {
-    db.prepare('UPDATE students SET name = ? WHERE id = ?').run(name, id);
-};
-
-export const deleteStudent = (id: number): void => {
-    db.prepare('DELETE FROM students WHERE id = ?').run(id);
-    // Enrollments CASCADE ile silinir
-};
-
-export const clearStudents = (): void => {
-    db.prepare('DELETE FROM students').run();
-};
-
 
 export const addEnrollmentsBulk = (enrollments: { studentNumber: string; courseCode: string }[]): void => {
+    const insertStudent = db.prepare('INSERT OR IGNORE INTO students (student_number, name, email) VALUES (?, ?, ?)');
+    const insertCourse = db.prepare('INSERT OR IGNORE INTO courses (code, name, enrolled_students) VALUES (?, ?, 0)');
     const getStudentId = db.prepare('SELECT id FROM students WHERE student_number = ?');
     const getCourseId = db.prepare('SELECT id FROM courses WHERE code = ? COLLATE NOCASE');
     const insertEnrollment = db.prepare('INSERT OR IGNORE INTO enrollments (course_id, student_id) VALUES (?, ?)');
 
-    const transaction = db.transaction((list) => {
+    db.transaction((list) => {
         for (const item of list) {
-            const student = getStudentId.get(item.studentNumber) as { id: number } | undefined;
-            const course = getCourseId.get(item.courseCode) as { id: number } | undefined;
-
-            if (student && course) {
-                insertEnrollment.run(course.id, student.id);
-            }
+            const sNum = item.studentNumber.trim();
+            const cCode = item.courseCode.trim();
+            insertStudent.run(sNum, `Student ${sNum}`, `${sNum.toLowerCase()}@uni.edu`);
+            insertCourse.run(cCode, cCode);
+            
+            const sId = (getStudentId.get(sNum) as IdResult)?.id;
+            const cId = (getCourseId.get(cCode) as IdResult)?.id;
+            if (sId && cId) insertEnrollment.run(cId, sId);
         }
-    });
-
-    transaction(enrollments);
+    })(enrollments);
 };
+
+export const updateStudent = (id: number, name: string) => db.prepare('UPDATE students SET name = ? WHERE id = ?').run(name, id);
+export const deleteStudent = (id: number) => db.prepare('DELETE FROM students WHERE id = ?').run(id);
+export const clearStudents = () => { db.prepare('DELETE FROM enrollments').run(); db.prepare('DELETE FROM students').run(); };

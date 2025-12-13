@@ -1,52 +1,62 @@
 import db from '../database/db';
 
-export interface CourseDB {
-    id: number;
-    code: string;
-    name: string;
-    enrolled_students: number;
-}
+interface CourseIdResult { id: number; }
 
-export const getCourses = (): CourseDB[] => {
+export const getCourses = (): any[] => {
+    // Canlı Sayım Sorgusu (0 görünme sorununu çözer)
     const stmt = db.prepare(`
         SELECT 
             c.id, 
             c.code, 
             c.name, 
-            COUNT(e.student_id) as enrolled_students 
-        FROM courses c 
-        LEFT JOIN enrollments e ON c.id = e.course_id 
-        GROUP BY c.id
+            (SELECT COUNT(*) FROM enrollments e WHERE e.course_id = c.id) as enrolled_students 
+        FROM courses c
     `);
-    return stmt.all() as CourseDB[];
+    return stmt.all();
 };
 
-export const addCourse = (code: string, name: string, enrolledStudents: number): number | bigint => {
-    const stmt = db.prepare('INSERT INTO courses (code, name, enrolled_students) VALUES (?, ?, ?)');
-    const info = stmt.run(code, name, enrolledStudents);
-    return info.lastInsertRowid;
+export const addCourse = (course: any) => {
+    const check = db.prepare('SELECT id FROM courses WHERE code = ? COLLATE NOCASE').get(course.code) as CourseIdResult | undefined;
+    
+    if (check) {
+        const update = db.prepare('UPDATE courses SET name = @name WHERE id = @id');
+        return update.run({ name: course.name, id: check.id });
+    } else {
+        const insert = db.prepare('INSERT INTO courses (code, name, enrolled_students) VALUES (@code, @name, 0)');
+        return insert.run(course);
+    }
 };
 
-export const updateCourse = (id: number, code: string, name: string): void => {
-    const stmt = db.prepare('UPDATE courses SET code = ?, name = ? WHERE id = ?');
-    stmt.run(code, name, id);
-};
+export const addCoursesBulk = (courses: any[]) => {
+    const checkStmt = db.prepare('SELECT id FROM courses WHERE code = ? COLLATE NOCASE');
+    const updateStmt = db.prepare('UPDATE courses SET name = @name WHERE id = @id');
+    const insertStmt = db.prepare('INSERT INTO courses (code, name, enrolled_students) VALUES (@code, @name, 0)');
 
-export const deleteCourse = (id: number): void => {
-    // Enrollments tablosunda ON DELETE CASCADE olduğu için kayıtlar oradan da silinir
-    const stmt = db.prepare('DELETE FROM courses WHERE id = ?');
-    stmt.run(id);
-};
-
-export const addCoursesBulk = (courses: { code: string; name: string; enrolledStudents: number }[]): void => {
-    const insert = db.prepare('INSERT INTO courses (code, name, enrolled_students) VALUES (@code, @name, @enrolledStudents)');
-    const insertMany = db.transaction((courses) => {
-        for (const course of courses) insert.run(course);
+    const transaction = db.transaction((list) => {
+        for (const course of list) {
+            const existing = checkStmt.get(course.code) as CourseIdResult | undefined;
+            if (existing) {
+                // Ders zaten (Attendance ile) oluşmuşsa, şimdi gelen gerçek ismiyle güncelle
+                updateStmt.run({ name: course.name, id: existing.id });
+            } else {
+                insertStmt.run(course);
+            }
+        }
     });
-    insertMany(courses);
+    transaction(courses);
 };
 
-export const clearCourses = (): void => {
-    db.prepare('DELETE FROM courses').run();
+export const updateCourse = (course: any) => {
+    const stmt = db.prepare('UPDATE courses SET code = @code, name = @name WHERE id = @id');
+    return stmt.run(course);
+};
+
+export const deleteCourse = (id: number) => {
+    const stmt = db.prepare('DELETE FROM courses WHERE id = ?');
+    return stmt.run(id);
+};
+
+export const clearCourses = () => {
     db.prepare('DELETE FROM enrollments').run();
+    db.prepare('DELETE FROM courses').run();
 };

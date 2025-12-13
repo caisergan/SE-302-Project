@@ -2,39 +2,30 @@ import { ipcMain } from 'electron';
 import * as studentService from '../services/studentService';
 
 export const registerStudentHandlers = () => {
-    ipcMain.handle('get-students', () => {
-        return studentService.getStudents();
-    });
-    // src/backend/handlers/studentHandler.ts içine şu satırı ekle (diğer handle'ların arasına):
+    
+    // Temizlik: Önceki handler'ları sil
+    ipcMain.removeHandler('get-students');
+    ipcMain.removeHandler('add-students-bulk');
+    ipcMain.removeHandler('update-student');
+    ipcMain.removeHandler('delete-student');
+    ipcMain.removeHandler('clear-students');
+    ipcMain.removeHandler('add-enrollments-bulk');
 
-    ipcMain.handle('add-enrollments-bulk', (_, data) => {
-        return studentService.addEnrollmentsBulk(data);
-    });
-
-    ipcMain.handle('add-students-bulk', (_, students) => {
-        return studentService.addStudentsBulk(students);
-    });
-
-    // --- DÜZELTME BURADA YAPILDI ---
-    ipcMain.handle('update-student', (_, student) => {
-        // Frontend'den ID string ("5") gelebilir, onu Number'a (5) çeviriyoruz.
-        // Ayrıca name'in boş olmadığından emin oluyoruz.
-        const id = Number(student.id);
-        const name = student.name;
-
-        if (isNaN(id)) {
-            throw new Error("Invalid Student ID");
+    // Kayıt: Yenileri ekle
+    ipcMain.handle('get-students', () => studentService.getStudents());
+    
+    // BURASI ÖNEMLİ: Bulk işlemi try-catch içine alındı
+    ipcMain.handle('add-students-bulk', async (_, students) => {
+        try {
+            return studentService.addStudentsBulk(students);
+        } catch (error) {
+            console.error("Bulk Import Error (Handler):", error);
+            throw error; // Hatayı Frontend'e fırlat ki kullanıcı görsün
         }
-
-        return studentService.updateStudent(id, name);
-    });
-    // -------------------------------
-
-    ipcMain.handle('delete-student', (_, id) => {
-        return studentService.deleteStudent(Number(id)); // Silme işleminde de Number() yapmak güvenlidir
     });
 
-    ipcMain.handle('clear-students', () => {
-        return studentService.clearStudents();
-    });
+    ipcMain.handle('update-student', (_, s) => studentService.updateStudent(Number(s.id), s.name));
+    ipcMain.handle('delete-student', (_, id) => studentService.deleteStudent(Number(id)));
+    ipcMain.handle('clear-students', () => studentService.clearStudents());
+    ipcMain.handle('add-enrollments-bulk', (_, data) => studentService.addEnrollmentsBulk(data));
 };

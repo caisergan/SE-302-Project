@@ -1,10 +1,17 @@
-import { app, BrowserWindow, Menu } from 'electron';
+import { app, BrowserWindow, Menu, ipcMain } from 'electron'; // ipcMain EKLENDİ
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { registerHandlers } from './backend/handlers';
+import { exportScheduleToCSV } from './backend/services/exportService'; 
 
+// Mevcut handlerları kaydet
 registerHandlers();
 
+// 👇 EKSİK OLAN KISIM BURASIYDI: Export işlemini dinleyen Handler
+ipcMain.handle('export-schedule-csv', async (_, data) => {
+    // Servisi çağır ve sonucu Frontend'e dön
+    return await exportScheduleToCSV(data);
+});
 
 if (started) {
   app.quit();
@@ -40,6 +47,7 @@ const createWindow = () => {
     );
   }
 
+  // Geliştirme sırasında DevTools'u aç (İstersen kapatabilirsin)
   mainWindow.webContents.openDevTools();
 
   const menuTemplate: Electron.MenuItemConstructorOptions[] = [

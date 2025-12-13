@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('api', {
     addCourse: (course: any) => ipcRenderer.invoke('add-course', course),
     updateCourse: (course: any) => ipcRenderer.invoke('update-course', course),
     deleteCourse: (id: number) => ipcRenderer.invoke('delete-course', id),
+    exportScheduleCSV: (data: any) => ipcRenderer.invoke('export-schedule-csv', data),
     addCoursesBulk: (courses: any[]) => ipcRenderer.invoke('add-courses-bulk', courses),
     clearCourses: () => ipcRenderer.invoke('clear-courses'),
     
