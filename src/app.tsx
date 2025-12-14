@@ -88,18 +88,29 @@ const App: React.FC = () => {
     setIsGenerating(true);
     setGenerationError(null);
 
+    // Helper to format date as local ISO string (no UTC conversion)
+    const toLocalISOString = (date: Date): string => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+    };
+
     try {
-      // Call the real scheduling algorithm via IPC
+      // Call the real scheduling algorithm via IPC (use local dates, not UTC)
       const result = await window.api.generateSchedule({
-        startDate: constraints.startDate.toISOString(),
-        endDate: constraints.endDate.toISOString(),
+        startDate: toLocalISOString(constraints.startDate),
+        endDate: toLocalISOString(constraints.endDate),
         includeWeekends: constraints.includeWeekends,
         dailyStartTime: constraints.dailyStartTime,
         dailyEndTime: constraints.dailyEndTime,
       });
 
       if (result.success) {
-        // Convert ISO date strings back to Date objects
+        // Convert date strings back to Date objects
         const scheduleWithDates = result.schedule.map((session: any) => ({
           ...session,
           startTime: new Date(session.startTime),
@@ -110,13 +121,13 @@ const App: React.FC = () => {
         setIsGenerated(true);
         setCurrentView(ViewMode.SCHEDULE);
 
-        // Auto-save the generated schedule to database
+        // Auto-save the generated schedule to database (keep as local strings)
         const sessionsForSave = result.schedule.map((s: any) => ({
           sessionId: s.id,
           courseCode: s.courseId,
           classroomName: s.classroomId,
-          startTime: typeof s.startTime === 'string' ? s.startTime : s.startTime.toISOString(),
-          endTime: typeof s.endTime === 'string' ? s.endTime : s.endTime.toISOString(),
+          startTime: s.startTime,
+          endTime: s.endTime,
         }));
         await window.api.saveSchedule(sessionsForSave);
 
