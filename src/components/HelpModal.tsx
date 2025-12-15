@@ -157,9 +157,6 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, currentVi
                             alt="Generate Schedule Interface" 
                             className="w-full h-64" 
                         />
-                        <p className="text-xs text-center text-slate-400 mt-1">
-                            {t('help.generateScreenshotDesc') || 'Algorithm configuration screen'}
-                        </p>
 
                         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                             <h4 className="font-semibold text-red-800 mb-2">{t('help.noSolution') || 'No Solution Found?'}</h4>
