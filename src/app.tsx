@@ -89,7 +89,6 @@ const App: React.FC = () => {
     setGenerationError(null);
 
     try {
-      // Call the real scheduling algorithm via IPC
       const result = await window.api.generateSchedule({
         startDate: constraints.startDate.toISOString(),
         endDate: constraints.endDate.toISOString(),
@@ -99,7 +98,6 @@ const App: React.FC = () => {
       });
 
       if (result.success) {
-        // Convert ISO date strings back to Date objects
         const scheduleWithDates = result.schedule.map((session: any) => ({
           ...session,
           startTime: new Date(session.startTime),
@@ -110,7 +108,6 @@ const App: React.FC = () => {
         setIsGenerated(true);
         setCurrentView(ViewMode.SCHEDULE);
 
-        // Auto-save the generated schedule to database
         const sessionsForSave = result.schedule.map((s: any) => ({
           sessionId: s.id,
           courseCode: s.courseId,
@@ -122,7 +119,6 @@ const App: React.FC = () => {
 
         console.log(`Schedule generated and saved successfully in ${result.stats?.generationTimeMs}ms`);
       } else {
-        // No valid schedule found
         setGenerationError(result.message);
         setIsGenerated(false);
         console.error('Schedule generation failed:', result.message);
@@ -202,7 +198,6 @@ const App: React.FC = () => {
             {renderContent()}
           </div>
 
-          {/* Constraint Modal Overlay */}
           {showConstraintModal && (
             <ConstraintSelector
               onBack={() => setShowConstraintModal(false)}
@@ -210,8 +205,11 @@ const App: React.FC = () => {
             />
           )}
 
-          {/* Help Modal */}
-          <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
+          <HelpModal 
+            isOpen={showHelpModal} 
+            onClose={() => setShowHelpModal(false)}
+            currentView={currentView}
+          />
         </main>
       </div>
     </NotificationProvider>
