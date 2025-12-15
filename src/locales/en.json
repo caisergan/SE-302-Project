@@ -170,6 +170,20 @@
         "exportDesc": "You can download and share the schedule in Excel format.",
         "csvExport": "Excel / CSV Output",
         "autoSave": "Auto Save",
-        "autoSaveDesc": "Your actions are saved to the database instantly."
+        "autoSaveDesc": "Your actions are saved to the database instantly.",
+        "generateImage": "/assets/help/generate1-en.png"
+    },
+    "constraintsModal": {
+        "title": "Exam Schedule Constraints",
+        "dateRange": "DATE RANGE",
+        "dailySchedule": "DAILY SCHEDULE",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "includeWeekends": "Include Weekends",
+        "firstExamTime": "First Exam Start Time",
+        "lastExamTime": "Last Exam Start Time",
+        "timeWarning": "No exams will start after this time",
+        "cancel": "Cancel",
+        "generate": "Generate Schedule"
     }
 }

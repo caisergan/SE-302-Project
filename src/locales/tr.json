@@ -149,7 +149,7 @@
       "studentsDesc": "Hangi öğrencinin hangi dersi aldığını gösteren listeyi yükleyin.",
       "generateTitle": "Programın Oluşturulması",
       "generateDesc": "Tüm veriler yüklendikten sonra Dashboard üzerinden algoritmayı çalıştırabilirsiniz.",
-      "configOptions": "Ayarlar",
+      "configOptions": "Yapılandırma",
       "startDate": "Başlangıç Tarihi",
       "startDateDesc": "Sınav döneminin ilk günü",
       "endDate": "Bitiş Tarihi",
@@ -170,6 +170,20 @@
       "exportDesc": "Programı Excel formatında indirip paylaşabilirsiniz.",
       "csvExport": "Excel / CSV Çıktısı",
       "autoSave": "Otomatik Kayıt",
-      "autoSaveDesc": "Yaptığınız işlemler veritabanına anlık olarak kaydedilir."
-  }
+      "autoSaveDesc": "Yaptığınız işlemler veritabanına anlık olarak kaydedilir.",
+      "generateImage": "/assets/help/generate1-tr.png"
+  },
+  "constraintsModal": {
+        "title": "Sınav Programı Kısıtlamaları",
+        "dateRange": "TARİH ARALIĞI",
+        "dailySchedule": "GÜNLÜK PROGRAM",
+        "startDate": "Başlangıç Tarihi",
+        "endDate": "Bitiş Tarihi",
+        "includeWeekends": "Hafta Sonunu Dahil Et",
+        "firstExamTime": "İlk Sınav Başlangıç Saati",
+        "lastExamTime": "Son Sınav Başlangıç Saati",
+        "timeWarning": "Bu saatten sonra sınav başlatılmaz",
+        "cancel": "İptal",
+        "generate": "Program Oluştur"
+    }
 }

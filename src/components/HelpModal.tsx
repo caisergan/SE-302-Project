@@ -8,9 +8,26 @@ interface HelpModalProps {
 
 type HelpSection = 'overview' | 'import' | 'generate' | 'views' | 'export';
 
+// --- YENİ EKLENEN GÖRSEL BİLEŞENİ ---
+// Bu bileşen resimlerin standart görünmesini sağlar.
+const HelpImage = ({ src, alt }: { src: string; alt: string }) => (
+    <div className="my-6 rounded-lg overflow-hidden border border-slate-200 shadow-md">
+        <img
+            src={src}
+            alt={alt}
+            className="w-full h-auto object-cover block"
+            onError={(e) => {
+                // Resim bulunamazsa alanı gizle
+                (e.target as HTMLImageElement).style.display = 'none';
+                (e.target as HTMLImageElement).parentElement!.style.display = 'none';
+            }}
+        />
+    </div>
+);
+
 export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
     const { t } = useTranslation();
-    const [activeSection, setActiveSection] = useState<HelpSection>('overview');
+    const [activeSection, setActiveSection] = useState<HelpSection>('generate'); // Test için varsayılanı 'generate' yaptım
 
     if (!isOpen) return null;
 
@@ -96,20 +113,33 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
                 );
             case 'generate':
                 return (
-                    <div className="space-y-4">
-                        <h3 className="text-xl font-bold text-slate-800">{t('help.generateTitle') || 'Generating a Schedule'}</h3>
-                        <p className="text-slate-600">
-                            {t('help.generateDesc') || 'After importing all required data, go to the Dashboard and click the "Run Generator" button.'}
-                        </p>
-                        <div className="bg-slate-50 rounded-lg p-4">
-                            <h4 className="font-semibold text-slate-800 mb-2">{t('help.configOptions') || 'Configuration Options'}</h4>
-                            <ul className="list-disc list-inside text-sm text-slate-600 space-y-1">
+                    // space-y-6 yaparak elemanlar arası boşluğu artırdık, bu taşmayı kolaylaştırır.
+                    <div className="space-y-6">
+                        <div>
+                            <h3 className="text-xl font-bold text-slate-800">{t('help.generateTitle') || 'Generating a Schedule'}</h3>
+                            <p className="text-slate-600 mt-2">
+                                {t('help.generateDesc') || 'After importing all required data, go to the Dashboard and click the "Run Generator" button.'}
+                            </p>
+                        </div>
+
+                        
+                        <div className="bg-slate-50 rounded-lg p-5 border border-slate-100">
+                            <h4 className="font-bold text-slate-800 mb-3 border-b border-slate-200 pb-2">{t('help.configOptions') || 'Configuration Options'}</h4>
+                            <ul className="list-disc list-inside text-sm text-slate-600 space-y-2">
                                 <li><strong>{t('help.startDate') || 'Start Date'}:</strong> {t('help.startDateDesc') || 'First day of the exam period'}</li>
                                 <li><strong>{t('help.endDate') || 'End Date'}:</strong> {t('help.endDateDesc') || 'Last day of the exam period'}</li>
                                 <li><strong>{t('help.dailyHours') || 'Daily Hours'}:</strong> {t('help.dailyHoursDesc') || 'Start and end time for exams each day'}</li>
                                 <li><strong>{t('help.weekends') || 'Include Weekends'}:</strong> {t('help.weekendsDesc') || 'Whether to schedule exams on Saturday/Sunday'}</li>
                             </ul>
                         </div>
+
+                            <HelpImage 
+                            src={t('help.generateImage')} 
+                            alt="Generate Schedule Interface"
+                        />
+                        
+                        
+                
                         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                             <h4 className="font-semibold text-red-800 mb-2">{t('help.noSolution') || 'No Solution Found?'}</h4>
                             <p className="text-sm text-red-700">{t('help.noSolutionDesc') || 'If the system cannot find a valid schedule, try extending the date range, adding more classrooms, or reducing course overlaps.'}</p>
@@ -165,6 +195,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            {/* Modal Container */}
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[80vh] flex overflow-hidden">
                 {/* Sidebar */}
                 <div className="w-56 bg-slate-100 border-r border-slate-200 p-4 flex flex-col">
@@ -191,7 +222,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
                     </nav>
                 </div>
 
-                {/* Content */}
+                {/* Content Area */}
                 <div className="flex-1 flex flex-col">
                     <div className="flex justify-end p-3 border-b border-slate-200">
                         <button
@@ -203,6 +234,8 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
                             </svg>
                         </button>
                     </div>
+                    
+                    {/* SCROLL CONTAINER: overflow-auto burada devreye girer */}
                     <div className="flex-1 p-6 overflow-auto">
                         {renderContent()}
                     </div>
