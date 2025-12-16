@@ -17,7 +17,8 @@
         "confirm": "Confirm",
         "previousWeek": "Previous Week",
         "nextWeek": "Next Week",
-        "today": "Today"
+        "today": "Today",
+        "done": "Done"
     },
     "dashboard": {
         "title": "Dashboard",
@@ -90,7 +91,14 @@
         "building": "Building",
         "enrolledStudents": "Enrolled Students",
         "enrolledCourses": "Enrolled Courses",
-        "studentNameGenerated": "Name (Generated)"
+        "studentNameGenerated": "Name",
+        "importStudentsTitle": "Import Student Data",
+        "importStudentsDesc": "Select the type of file you want to import:",
+        "importStudentInfo": "Student Information",
+        "importStudentInfoDesc": "Import a file containing student IDs and names (e.g., sampleData_AllStudents.csv)",
+        "importAttendance": "Attendance Data",
+        "importAttendanceDesc": "Import a file containing course-student enrollments (e.g., sampleData_AllAttendanceLists.csv)",
+        "importedStudents": "Imported {{count}} students."
     },
     "schedule": {
         "title": "Schedule View",

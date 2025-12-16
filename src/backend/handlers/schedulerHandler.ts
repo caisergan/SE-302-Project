@@ -48,7 +48,9 @@ export const registerSchedulerHandlers = () => {
     ipcMain.handle('generate-schedule', async (_, constraints: GenerationConstraints) => {
         try {
             // Fetch all required data from database
-            const coursesDB = courseService.getCourses();
+            // Use getActiveCoursesOnly() to only schedule courses with enrolled students
+            // This significantly reduces the problem size (from 740 to ~738 with enrollments)
+            const coursesDB = courseService.getActiveCoursesOnly();
             const classroomsDB = classroomService.getClassrooms();
             const studentsDB = studentService.getStudents();
 

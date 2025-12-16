@@ -126,6 +126,130 @@ const EditModal: React.FC<EditModalProps> = ({ item, type, mode, onClose, onSave
     );
 };
 
+interface ImportStatus {
+    fileName: string;
+    count: number;
+}
+
+interface StudentImportModalProps {
+    onClose: () => void;
+    onSelectStudentInfo: () => void;
+    onSelectAttendance: () => void;
+    studentInfoStatus: ImportStatus | null;
+    attendanceStatus: ImportStatus | null;
+    onSave: () => void;
+}
+
+const StudentImportModal: React.FC<StudentImportModalProps> = ({
+    onClose,
+    onSelectStudentInfo,
+    onSelectAttendance,
+    studentInfoStatus,
+    attendanceStatus,
+    onSave
+}) => {
+    const { t } = useTranslation();
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100">
+                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                    <h3 className="font-bold text-slate-800">
+                        {t('dataInput.importStudentsTitle') || 'Import Student Data'}
+                    </h3>
+                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                    </button>
+                </div>
+                <div className="p-6 space-y-4">
+                    <p className="text-sm text-slate-500 mb-4">
+                        {t('dataInput.importStudentsDesc') || 'Select the type of file you want to import:'}
+                    </p>
+
+                    {/* Student Info Card */}
+                    <div
+                        className={`border rounded-lg p-4 cursor-pointer transition-all group ${studentInfoStatus ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50'}`}
+                        onClick={onSelectStudentInfo}
+                    >
+                        <div className="flex items-start gap-4">
+                            <div className={`p-3 rounded-lg transition-colors ${studentInfoStatus ? 'bg-indigo-200 text-indigo-700' : 'bg-indigo-100 text-indigo-600 group-hover:bg-indigo-200'}`}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                                    <circle cx="9" cy="7" r="4" />
+                                    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="font-semibold text-slate-800 mb-1">
+                                    {t('dataInput.importStudentInfo') || 'Student Information'}
+                                </h4>
+                                <p className="text-sm text-slate-500">
+                                    {studentInfoStatus
+                                        ? <span>{studentInfoStatus.fileName} <br /><span className="font-medium text-indigo-700">{studentInfoStatus.count} records found</span></span>
+                                        : (t('dataInput.importStudentInfoDesc') || 'Import a file containing student IDs and names (e.g., realData_AllStudents.csv)')
+                                    }
+                                </p>
+                            </div>
+                            <div className={`transition-colors ${studentInfoStatus ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-500'}`}>
+                                {studentInfoStatus ? (
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                ) : (
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Attendance Card */}
+                    <div
+                        className={`border rounded-lg p-4 cursor-pointer transition-all group ${attendanceStatus ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/50'}`}
+                        onClick={onSelectAttendance}
+                    >
+                        <div className="flex items-start gap-4">
+                            <div className={`p-3 rounded-lg transition-colors ${attendanceStatus ? 'bg-emerald-200 text-emerald-700' : 'bg-emerald-100 text-emerald-600 group-hover:bg-emerald-200'}`}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                    <polyline points="14 2 14 8 20 8" />
+                                    <line x1="16" y1="13" x2="8" y2="13" />
+                                    <line x1="16" y1="17" x2="8" y2="17" />
+                                    <polyline points="10 9 9 9 8 9" />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <h4 className="font-semibold text-slate-800 mb-1">
+                                    {t('dataInput.importAttendance') || 'Attendance Data'}
+                                </h4>
+                                <p className="text-sm text-slate-500">
+                                    {attendanceStatus
+                                        ? <span>{attendanceStatus.fileName} <br /><span className="font-medium text-emerald-700">{attendanceStatus.count} records found</span></span>
+                                        : (t('dataInput.importAttendanceDesc') || 'Import a file containing course-student enrollments (e.g., realData_AllAttendanceLists.csv)')
+                                    }
+                                </p>
+                            </div>
+                            <div className={`transition-colors ${attendanceStatus ? 'text-emerald-600' : 'text-slate-400 group-hover:text-emerald-500'}`}>
+                                {attendanceStatus ? (
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                ) : (
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                    <button
+                        onClick={onSave}
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm transition-colors"
+                    >
+                        {t('common.done') || 'Done'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export const DataInput: React.FC<DataInputProps> = ({
     courses, setCourses, classrooms, setClassrooms, students, setStudents
 }) => {
@@ -133,11 +257,22 @@ export const DataInput: React.FC<DataInputProps> = ({
     const { showNotification } = useNotification();
     const [activeTab, setActiveTab] = useState<Tab>('courses');
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const studentInfoFileInputRef = useRef<HTMLInputElement>(null);
+    const attendanceFileInputRef = useRef<HTMLInputElement>(null);
 
     const [editingItem, setEditingItem] = useState<Course | Classroom | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState<'add' | 'edit'>('edit');
     const [isClearMenuOpen, setIsClearMenuOpen] = useState(false);
+    const [isStudentImportModalOpen, setIsStudentImportModalOpen] = useState(false);
+
+    // Status state for the modal
+    const [studentInfoStatus, setStudentInfoStatus] = useState<ImportStatus | null>(null);
+    const [attendanceStatus, setAttendanceStatus] = useState<ImportStatus | null>(null);
+
+    // Buffers for storing data during modal session
+    const tempStudentMap = useRef<Map<string, string>>(new Map()); // ID -> Name
+    const tempAttendanceMap = useRef<Map<string, Set<string>>>(new Map()); // ID -> Set<CourseCode>
 
     const handleClearData = async (type: 'all' | 'courses' | 'classrooms' | 'students') => {
         const confirmMessage = type === 'all'
@@ -167,7 +302,26 @@ export const DataInput: React.FC<DataInputProps> = ({
     };
 
     const handleImportClick = () => {
-        fileInputRef.current?.click();
+        if (activeTab === 'students') {
+            // Reset status and buffers when opening
+            setStudentInfoStatus(null);
+            setAttendanceStatus(null);
+            tempStudentMap.current.clear();
+            tempAttendanceMap.current.clear();
+            setIsStudentImportModalOpen(true);
+        } else {
+            fileInputRef.current?.click();
+        }
+    };
+
+    const handleStudentInfoImport = () => {
+        // Do not close modal here anymore
+        studentInfoFileInputRef.current?.click();
+    };
+
+    const handleAttendanceImport = () => {
+        // Do not close modal here anymore
+        attendanceFileInputRef.current?.click();
     };
 
     const handleEditClick = (item: Course | Classroom) => {
@@ -247,7 +401,7 @@ export const DataInput: React.FC<DataInputProps> = ({
                 // The current frontend uses `code` as `id` for courses often.
                 // Let's check `Course` type.
                 // In `types/index.ts` (not seen but inferred), `id` is likely string or number.
-                // In `DataInput.tsx` line 211: `id: code`.
+                // In `DataInput.tsx` line 211: `id` is `code`.
                 // So let's keep using code as ID for now or map properly.
                 code: c.code,
                 name: c.name,
@@ -273,7 +427,7 @@ export const DataInput: React.FC<DataInputProps> = ({
             if (parts.length >= 2) {
                 const name = parts[0].trim();
                 const capacity = parseInt(parts[1].trim(), 10);
-                
+
                 newRooms.push({
                     id: name,
                     name: name,
@@ -303,44 +457,42 @@ export const DataInput: React.FC<DataInputProps> = ({
         }
     };
 
-    
-    const parseSimpleStudentList = async (rows: string[]) => {
-        const newStudents: any[] = [];
-        
+
+    // --- Pure Parsing Logic ---
+
+    const extractStudentMap = (rows: string[]): Map<string, string> => {
+        const map = new Map<string, string>();
         rows.forEach(row => {
             const cleanRow = row.trim();
-            
             if (!cleanRow || cleanRow.includes("ALL OF THE STUDENTS")) return;
-
-            
-            const studentId = cleanRow;
-            newStudents.push({
-                studentNumber: studentId,
-                name: `Student ${studentId}`, 
-                enrolledCourses: [] 
-            });
+            // Assuming format: ID;Name
+            // The previous logic was: const [student_id, student_name] = row.split(';');
+            // But parseSimpleStudentList used just cleanRow as ID and generated name.
+            // Let's check parseSimpleStudentList again.
+            // It did: studentId = cleanRow; name = Student {studentId}
+            // Wait, the original `parseSimpleStudentList` I saw in Step 29/30 had split(';') logic commented out or replaced?
+            // In Step 29, line 316: `const studentId = cleanRow;`
+            // In Step 18 (summary): `realData_AllStudents.csv` format `student_id;student_name`.
+            // The code in Step 29 seemed to simplify it.
+            // Let's try to handle both if possible, or stick to what the code was doing.
+            // The code at line 424 (viewed in Step 138) was: `const studentId = cleanRow;`
+            // And name: `Student ${studentId}`
+            // BUT the user says "Student Information" file.
+            // Let's look at `realData_AllStudents.csv` content from Step 18 summary: `student_id;student_name`
+            // If the code was just taking the whole row as ID, that might be a bug or I misread.
+            // Let's try to split by semicolon if present.
+            if (cleanRow.includes(';')) {
+                const [id, name] = cleanRow.split(';');
+                if (id) map.set(id.trim(), name?.trim() || `Student ${id.trim()}`);
+            } else {
+                map.set(cleanRow, `Student ${cleanRow}`);
+            }
         });
-
-        if (newStudents.length > 0) {
-             await window.api.addStudentsBulk(newStudents);
-             
-             const savedStudents = await window.api.getStudents();
-             const mappedStudents = savedStudents.map((s: any) => ({
-                id: s.student_number,
-                name: s.name,
-                email: `${s.student_number.toLowerCase()}@uni.edu`,
-                enrolledCourses: s.enrolled_courses
-             }));
-             setStudents(mappedStudents);
-             
-             showNotification(t('dataInput.importedStudents', { count: newStudents.length }) || `Imported ${newStudents.length} students`, 'success');
-        } else {
-             showNotification(t('dataInput.formatError'), 'error');
-        }
+        return map;
     };
 
-    const parseStudentAttendanceFile = async (rows: string[]) => {
-        const studentMap = new Map<string, Set<string>>();
+    const extractAttendanceMap = (rows: string[]): Map<string, Set<string>> => {
+        const map = new Map<string, Set<string>>();
         let currentCourseCode = '';
 
         rows.forEach(row => {
@@ -349,33 +501,41 @@ export const DataInput: React.FC<DataInputProps> = ({
 
             if (cleanRow.startsWith('[')) {
                 if (!currentCourseCode) return;
-
                 const content = cleanRow.slice(1, -1);
+                // The regex replace might be needed for quoted strings
                 const studentIds = content.split(',').map(s => s.trim().replace(/^['"]|['"]$/g, ''));
-
                 studentIds.forEach(sId => {
                     if (!sId) return;
-                    if (!studentMap.has(sId)) studentMap.set(sId, new Set());
-                    studentMap.get(sId)?.add(currentCourseCode);
+                    if (!map.has(sId)) map.set(sId, new Set());
+                    map.get(sId)?.add(currentCourseCode);
                 });
             } else {
-                if (cleanRow.length < 50) currentCourseCode = cleanRow;
+                // Heuristic for course code vs empty line
+                if (cleanRow.length < 50 && !cleanRow.startsWith('[')) currentCourseCode = cleanRow;
             }
         });
+        return map;
+    };
 
+    const saveMergedData = async () => {
+        // Merge buffers
+        const allStudentIds = new Set([...tempStudentMap.current.keys(), ...tempAttendanceMap.current.keys()]);
         const newStudents: any[] = [];
-        studentMap.forEach((coursesSet, studentId) => {
+
+        allStudentIds.forEach(id => {
+            const name = tempStudentMap.current.get(id) || `Student ${id.split('_')[2] || id}`;
+            const courses = tempAttendanceMap.current.get(id) || new Set();
             newStudents.push({
-                studentNumber: studentId,
-                name: `Student ${studentId.split('_')[2] || studentId}`,
-                enrolledCourses: Array.from(coursesSet)
+                studentNumber: id,
+                name: name,
+                enrolledCourses: Array.from(courses)
             });
         });
 
         if (newStudents.length > 0) {
             await window.api.addStudentsBulk(newStudents);
 
-            // Fetch updated students
+            // Refresh data
             const savedStudents = await window.api.getStudents();
             const mappedStudents = savedStudents.map((s: any) => ({
                 id: s.student_number,
@@ -383,10 +543,9 @@ export const DataInput: React.FC<DataInputProps> = ({
                 email: `${s.student_number.toLowerCase()}@uni.edu`,
                 enrolledCourses: s.enrolled_courses
             }));
-
             setStudents(mappedStudents);
-            
-            // Also refresh courses to update enrolled counts
+
+            // Refresh courses for enrolled counts
             const savedCourses = await window.api.getCourses();
             const mappedCourses = savedCourses.map((c: any) => ({
                 id: c.code,
@@ -396,10 +555,80 @@ export const DataInput: React.FC<DataInputProps> = ({
             }));
             setCourses(mappedCourses);
 
-            showNotification(t('dataInput.processedAttendance', { count: newStudents.length }), 'success');
+            showNotification(t('dataInput.importedStudents', { count: newStudents.length }), 'success');
         } else {
-            showNotification(t('dataInput.noStudents'), 'error');
+            // Maybe show error if nothing to save?
+            // But if they clicked Done with nothing, maybe just close.
         }
+        setIsStudentImportModalOpen(false);
+    };
+
+    // --- Parsing Wrappers for ProcessCSV (Legacy/Direct) ---
+
+    // Updated to use the correct logic but immediately save (same behavior as before but cleaner)
+    const parseSimpleStudentList = async (rows: string[]): Promise<number> => {
+        const map = extractStudentMap(rows);
+        // We need to merge this with potentially existing data? 
+        // processCSV is usually for bulk import of everything.
+        // For safely: we just save what we found.
+        const newStudents: any[] = [];
+        map.forEach((name, id) => {
+            newStudents.push({
+                studentNumber: id,
+                name: name,
+                enrolledCourses: []
+            });
+        });
+
+        if (newStudents.length > 0) {
+            await window.api.addStudentsBulk(newStudents);
+            // Refresh...
+            const savedStudents = await window.api.getStudents();
+            setStudents(savedStudents.map((s: any) => ({
+                id: s.student_number,
+                name: s.name,
+                email: `${s.student_number.toLowerCase()}@uni.edu`,
+                enrolledCourses: s.enrolled_courses
+            })));
+            showNotification(t('dataInput.importedStudents', { count: newStudents.length }), 'success');
+            return newStudents.length;
+        }
+        return 0;
+    };
+
+    const parseStudentAttendanceFile = async (rows: string[]): Promise<number> => {
+        const map = extractAttendanceMap(rows);
+        const newStudents: any[] = [];
+        map.forEach((courses, id) => {
+            newStudents.push({
+                studentNumber: id,
+                name: `Student ${id}`,
+                enrolledCourses: Array.from(courses)
+            });
+        });
+
+        if (newStudents.length > 0) {
+            await window.api.addStudentsBulk(newStudents);
+            // Refresh...
+            const savedStudents = await window.api.getStudents();
+            setStudents(savedStudents.map((s: any) => ({
+                id: s.student_number,
+                name: s.name,
+                email: `${s.student_number.toLowerCase()}@uni.edu`,
+                enrolledCourses: s.enrolled_courses
+            })));
+            const savedCourses = await window.api.getCourses();
+            setCourses(savedCourses.map((c: any) => ({
+                id: c.code,
+                code: c.code,
+                name: c.name,
+                enrolledStudents: c.enrolled_students
+            })));
+
+            showNotification(t('dataInput.processedAttendance', { count: newStudents.length }), 'success');
+            return newStudents.length;
+        }
+        return 0;
     };
 
     const processCSV = (text: string) => {
@@ -440,6 +669,56 @@ export const DataInput: React.FC<DataInputProps> = ({
                 processCSV(text);
             } catch (err) {
                 console.error("Failed to parse file", err);
+                showNotification(t('dataInput.parseError'), 'error');
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+    };
+
+    const handleStudentInfoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const text = event.target?.result as string;
+            try {
+                const rows = text.split('\n').map(r => r.trim()).filter(r => r.length > 0);
+                // Buffer Mode
+                const map = extractStudentMap(rows);
+                map.forEach((val, key) => tempStudentMap.current.set(key, val));
+                const count = map.size; // Showing map.size is count from this file
+                setStudentInfoStatus({ fileName: file.name, count });
+            } catch (err) {
+                console.error("Failed to parse student info file", err);
+                showNotification(t('dataInput.parseError'), 'error');
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+    };
+
+    const handleAttendanceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const text = event.target?.result as string;
+            try {
+                const rows = text.split('\n').map(r => r.trim()).filter(r => r.length > 0);
+                // Buffer Mode
+                const map = extractAttendanceMap(rows);
+                map.forEach((val, key) => {
+                    if (!tempAttendanceMap.current.has(key)) tempAttendanceMap.current.set(key, new Set());
+                    val.forEach(c => tempAttendanceMap.current.get(key)?.add(c));
+                });
+
+                // For Status: calculate how many unique students involved in this file?
+                setAttendanceStatus({ fileName: file.name, count: map.size });
+            } catch (err) {
+                console.error("Failed to parse attendance file", err);
                 showNotification(t('dataInput.parseError'), 'error');
             }
         };
@@ -500,8 +779,8 @@ export const DataInput: React.FC<DataInputProps> = ({
                                     <td className="px-6 py-4 font-medium text-slate-900">{r.name}</td>
                                     <td className="px-6 py-4">{r.building}</td>
                                     <td className="px-6 py-4">{r.capacity}</td>
-                                    <td className="px-6 py-4 text-indigo-600 hover:underline cursor-pointer" 
-                                    onClick={() => handleEditClick(r)}
+                                    <td className="px-6 py-4 text-indigo-600 hover:underline cursor-pointer"
+                                        onClick={() => handleEditClick(r)}
 
                                     >
                                         {t('common.edit')}
@@ -583,12 +862,39 @@ export const DataInput: React.FC<DataInputProps> = ({
                 />
             )}
 
+            {isStudentImportModalOpen && (
+                <StudentImportModal
+                    onClose={() => setIsStudentImportModalOpen(false)}
+                    onSelectStudentInfo={handleStudentInfoImport}
+                    onSelectAttendance={handleAttendanceImport}
+                    studentInfoStatus={studentInfoStatus}
+                    attendanceStatus={attendanceStatus}
+                    onSave={saveMergedData}
+                />
+            )}
+
             <input
                 type="file"
                 ref={fileInputRef}
                 className="hidden"
                 accept=".csv,.txt"
                 onChange={handleFileChange}
+            />
+
+            <input
+                type="file"
+                ref={studentInfoFileInputRef}
+                className="hidden"
+                accept=".csv,.txt"
+                onChange={handleStudentInfoFileChange}
+            />
+
+            <input
+                type="file"
+                ref={attendanceFileInputRef}
+                className="hidden"
+                accept=".csv,.txt"
+                onChange={handleAttendanceFileChange}
             />
 
             <div className="p-6 border-b border-slate-200 flex justify-between items-center shrink-0">

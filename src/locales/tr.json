@@ -17,7 +17,8 @@
         "confirm": "Onayla",
         "previousWeek": "Önceki Hafta",
         "nextWeek": "Sonraki Hafta",
-        "today": "Bugün"
+        "today": "Bugün",
+        "done": "Tamam"
     },
     "dashboard": {
         "title": "Panel",
@@ -90,7 +91,14 @@
         "building": "Bina",
         "enrolledStudents": "Kayıtlı Öğrenciler",
         "enrolledCourses": "Kayıtlı Dersler",
-        "studentNameGenerated": "İsim (Oluşturulan)"
+        "studentNameGenerated": "İsim",
+        "importStudentsTitle": "Öğrenci Verisi Aktar",
+        "importStudentsDesc": "İçe aktarmak istediğiniz dosya türünü seçin:",
+        "importStudentInfo": "Öğrenci Bilgileri",
+        "importStudentInfoDesc": "Öğrenci ID ve isimlerini içeren dosyayı içe aktarın (örn. sampleData_AllStudents.csv)",
+        "importAttendance": "Devam Verileri",
+        "importAttendanceDesc": "Ders-öğrenci kayıtlarını içeren dosyayı içe aktarın (örn. sampleData_AllAttendanceLists.csv)",
+        "importedStudents": "{{count}} öğrenci aktarıldı."
     },
     "schedule": {
         "title": "Program Görünümü",

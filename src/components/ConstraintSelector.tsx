@@ -32,7 +32,7 @@ export const ConstraintSelector: React.FC<ConstraintSelectorProps> = ({ onBack, 
             dailyStartTime,
             dailyEndTime,
             maxExamsPerDay,
-            allowConsecutiveExams: minHoursBetweenExams === 0, // Derived from hours
+            allowConsecutiveExams: true, // Let minHoursBetweenExams control the gap validation
             minHoursBetweenExams
         });
     };
