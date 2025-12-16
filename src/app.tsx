@@ -49,6 +49,21 @@ const App: React.FC = () => {
           email: `${s.student_number.toLowerCase()}@uni.edu`,
           enrolledCourses: s.enrolled_courses
         })));
+
+        // Load saved schedule from database
+        const savedScheduleResult = await window.api.loadSchedule();
+        if (savedScheduleResult.success && savedScheduleResult.sessions.length > 0) {
+          const loadedSchedule = savedScheduleResult.sessions.map((s: any) => ({
+            id: s.session_id,
+            courseId: s.course_code,
+            classroomId: s.classroom_name,
+            startTime: new Date(s.start_time),
+            endTime: new Date(s.end_time),
+          }));
+          setSchedule(loadedSchedule);
+          setIsGenerated(true);
+          console.log(`Loaded ${loadedSchedule.length} saved exam sessions from database.`);
+        }
       } catch (error) {
         console.error("Failed to load data:", error);
       }
@@ -225,8 +240,8 @@ const App: React.FC = () => {
             />
           )}
 
-          <HelpModal 
-            isOpen={showHelpModal} 
+          <HelpModal
+            isOpen={showHelpModal}
             onClose={() => setShowHelpModal(false)}
             currentView={currentView}
           />
