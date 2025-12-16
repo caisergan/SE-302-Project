@@ -34,13 +34,23 @@ export const Dashboard: React.FC<DashboardProps> = ({
     <div className="space-y-6 animate-fade-in">
       {/* Error Alert */}
       {generationError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-start gap-3">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
-            <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          <div>
-            <div className="font-semibold">{t('dashboard.generationFailed') || 'Schedule Generation Failed'}</div>
-            <div className="text-sm mt-1">{generationError}</div>
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-4 rounded-xl">
+          <div className="flex items-start gap-3">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
+              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <div className="flex-1">
+              <div className="font-semibold text-red-800">{t('dashboard.generationFailed') || 'Schedule Generation Failed'}</div>
+              <div className="text-sm mt-2 whitespace-pre-line">{generationError}</div>
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={onGenerate}
+              className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+            >
+              {t('dashboard.tryAgain') || 'Try Again'}
+            </button>
           </div>
         </div>
       )}
