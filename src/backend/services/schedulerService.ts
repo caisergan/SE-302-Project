@@ -267,13 +267,12 @@ function solve(
     timeSlots: TimeSlot[],
     context: ValidationContext,
     index: number,
-    iterationCount: { count: number },
-    maxIterations: number
+    startTime: number,
+    timeoutMs: number
 ): boolean {
-    // Check for timeout
-    iterationCount.count++;
-    if (iterationCount.count > maxIterations) {
-        return false; // Stop trying - too many iterations
+    // Check for timeout (time-based, not iteration-based)
+    if (Date.now() - startTime > timeoutMs) {
+        return false; // Stop trying - timeout reached
     }
 
     // Base case: All courses have been scheduled
@@ -286,7 +285,7 @@ function solve(
     // Try each time slot
     for (const timeSlot of timeSlots) {
         // Check for timeout in inner loop
-        if (iterationCount.count > maxIterations) {
+        if (Date.now() - startTime > timeoutMs) {
             return false;
         }
 
@@ -303,7 +302,7 @@ function solve(
                 context.assignments.push(assignment);
 
                 // Recursively try to schedule the remaining courses
-                if (solve(courses, classrooms, timeSlots, context, index + 1, iterationCount, maxIterations)) {
+                if (solve(courses, classrooms, timeSlots, context, index + 1, startTime, timeoutMs)) {
                     return true;
                 }
 
@@ -380,19 +379,22 @@ export function generateSchedule(
         studentCourseMap
     };
 
-    // Run the backtracking solver with timeout (max 100,000 iterations)
-    const iterationCount = { count: 0 };
-    const maxIterations = 100000;
-    const success = solve(sortedCourses, classrooms, timeSlots, context, 0, iterationCount, maxIterations);
+    // Run the backtracking solver with 5-second timeout
+    const timeoutMs = 5000; // 5 seconds
+    const success = solve(sortedCourses, classrooms, timeSlots, context, 0, startTime, timeoutMs);
 
     const endTime = Date.now();
+    const timedOut = (endTime - startTime) >= timeoutMs;
 
     if (!success) {
+        const timeoutMessage = timedOut
+            ? 'The algorithm timed out while searching for a valid schedule. '
+            : 'Unable to generate a valid schedule. ';
         return {
             success: false,
             schedule: [],
-            message: 'Unable to generate a valid schedule. The constraints are too restrictive. ' +
-                'Try adding more classrooms, extending the exam period, or reducing course enrollments.',
+            message: timeoutMessage +
+                'The constraints are too restrictive. Try adding more classrooms, extending the exam period, or reducing course enrollments.',
             stats: {
                 totalCourses: courses.length,
                 scheduledCourses: context.assignments.length,
