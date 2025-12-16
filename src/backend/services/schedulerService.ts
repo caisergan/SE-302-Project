@@ -209,14 +209,15 @@ function isSafe(
             return false;
         }
 
-        // Constraint 4: No Consecutive Exams
-        // A student should not have exams in consecutive time slots on the same day
+        // Constraint 4: No Consecutive Exams - DISABLED
+        // The 1-hour break between time slots already provides adequate gap.
+        // Consecutive slots are now allowed to reduce scheduling gaps.
+        /*
         const consecutiveConflict = context.assignments.some((a) => {
             const studentsInAssignedCourse = context.courseStudentMap.get(a.course.id) || [];
             if (!studentsInAssignedCourse.includes(studentId)) {
                 return false;
             }
-            // Check if on the same day and consecutive slot
             if (a.timeSlot.dayIndex === timeSlot.dayIndex) {
                 const slotDiff = Math.abs(a.timeSlot.slotIndex - timeSlot.slotIndex);
                 return slotDiff === 1;
@@ -226,6 +227,7 @@ function isSafe(
         if (consecutiveConflict) {
             return false;
         }
+        */
 
         // Constraint 5: Maximum Daily Exams
         // A student cannot have more than MAX_EXAMS_PER_DAY_PER_STUDENT exams on the same day
@@ -255,6 +257,8 @@ function isSafe(
  * @param timeSlots - Available time slots
  * @param context - Validation context with current assignments
  * @param index - Current index in the courses array
+ * @param iterationCount - Reference object to track iterations
+ * @param maxIterations - Maximum allowed iterations before timeout
  * @returns true if a valid schedule was found, false otherwise
  */
 function solve(
@@ -262,8 +266,16 @@ function solve(
     classrooms: Classroom[],
     timeSlots: TimeSlot[],
     context: ValidationContext,
-    index: number
+    index: number,
+    iterationCount: { count: number },
+    maxIterations: number
 ): boolean {
+    // Check for timeout
+    iterationCount.count++;
+    if (iterationCount.count > maxIterations) {
+        return false; // Stop trying - too many iterations
+    }
+
     // Base case: All courses have been scheduled
     if (index === courses.length) {
         return true;
@@ -273,6 +285,11 @@ function solve(
 
     // Try each time slot
     for (const timeSlot of timeSlots) {
+        // Check for timeout in inner loop
+        if (iterationCount.count > maxIterations) {
+            return false;
+        }
+
         // Try each classroom
         for (const classroom of classrooms) {
             // Check if this assignment satisfies all constraints
@@ -286,7 +303,7 @@ function solve(
                 context.assignments.push(assignment);
 
                 // Recursively try to schedule the remaining courses
-                if (solve(courses, classrooms, timeSlots, context, index + 1)) {
+                if (solve(courses, classrooms, timeSlots, context, index + 1, iterationCount, maxIterations)) {
                     return true;
                 }
 
@@ -363,8 +380,10 @@ export function generateSchedule(
         studentCourseMap
     };
 
-    // Run the backtracking solver
-    const success = solve(sortedCourses, classrooms, timeSlots, context, 0);
+    // Run the backtracking solver with timeout (max 100,000 iterations)
+    const iterationCount = { count: 0 };
+    const maxIterations = 100000;
+    const success = solve(sortedCourses, classrooms, timeSlots, context, 0, iterationCount, maxIterations);
 
     const endTime = Date.now();
 
