@@ -11,6 +11,9 @@ export interface GenerationConstraints {
   includeWeekends: boolean;
   dailyStartTime: string; // "09:00"
   dailyEndTime: string;   // "17:00"
+  maxExamsPerDay: number; // Maximum exams per student per day (default: 2)
+  allowConsecutiveExams: boolean; // Allow back-to-back exams (default: true)
+  minHoursBetweenExams: number; // Minimum hours between exams for a student (default: 1)
 }
 
 export interface Course {

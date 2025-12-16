@@ -107,6 +107,9 @@ const App: React.FC = () => {
         includeWeekends: constraints.includeWeekends,
         dailyStartTime: constraints.dailyStartTime,
         dailyEndTime: constraints.dailyEndTime,
+        maxExamsPerDay: constraints.maxExamsPerDay,
+        allowConsecutiveExams: constraints.allowConsecutiveExams,
+        minHoursBetweenExams: constraints.minHoursBetweenExams,
       });
 
       if (result.success) {

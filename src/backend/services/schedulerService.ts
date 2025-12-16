@@ -168,6 +168,9 @@ interface ValidationContext {
     assignments: ScheduleAssignment[];
     courseStudentMap: Map<string, string[]>;
     studentCourseMap: Map<string, string[]>;
+    maxExamsPerDay: number;
+    allowConsecutiveExams: boolean;
+    minHoursBetweenExams: number;
 }
 
 /**
@@ -209,36 +212,62 @@ function isSafe(
             return false;
         }
 
-        // Constraint 4: No Consecutive Exams - DISABLED
-        // The 1-hour break between time slots already provides adequate gap.
-        // Consecutive slots are now allowed to reduce scheduling gaps.
-        /*
-        const consecutiveConflict = context.assignments.some((a) => {
-            const studentsInAssignedCourse = context.courseStudentMap.get(a.course.id) || [];
-            if (!studentsInAssignedCourse.includes(studentId)) {
+        // Constraint 4: No Consecutive Exams (configurable)
+        // If disabled, students cannot have exams in consecutive time slots
+        if (!context.allowConsecutiveExams) {
+            const consecutiveConflict = context.assignments.some((a) => {
+                const studentsInAssignedCourse = context.courseStudentMap.get(a.course.id) || [];
+                if (!studentsInAssignedCourse.includes(studentId)) {
+                    return false;
+                }
+                if (a.timeSlot.dayIndex === timeSlot.dayIndex) {
+                    const slotDiff = Math.abs(a.timeSlot.slotIndex - timeSlot.slotIndex);
+                    return slotDiff === 1;
+                }
+                return false;
+            });
+            if (consecutiveConflict) {
                 return false;
             }
-            if (a.timeSlot.dayIndex === timeSlot.dayIndex) {
-                const slotDiff = Math.abs(a.timeSlot.slotIndex - timeSlot.slotIndex);
-                return slotDiff === 1;
-            }
-            return false;
-        });
-        if (consecutiveConflict) {
-            return false;
         }
-        */
 
-        // Constraint 5: Maximum Daily Exams
-        // A student cannot have more than MAX_EXAMS_PER_DAY_PER_STUDENT exams on the same day
+        // Constraint 5: Maximum Daily Exams (configurable)
+        // A student cannot have more than maxExamsPerDay exams on the same day
         const examsOnSameDay = context.assignments.filter((a) => {
             const studentsInAssignedCourse = context.courseStudentMap.get(a.course.id) || [];
             return studentsInAssignedCourse.includes(studentId) &&
                 a.timeSlot.dayIndex === timeSlot.dayIndex;
         }).length;
 
-        if (examsOnSameDay >= MAX_EXAMS_PER_DAY_PER_STUDENT) {
+        if (examsOnSameDay >= context.maxExamsPerDay) {
             return false;
+        }
+
+        // Constraint 6: Minimum Hours Between Exams (configurable)
+        // Ensure there's at least minHoursBetweenExams gap between exams for same student
+        if (context.minHoursBetweenExams > 0) {
+            const minGapMs = context.minHoursBetweenExams * 60 * 60 * 1000; // Convert hours to ms
+            const tooCloseExam = context.assignments.some((a) => {
+                const studentsInAssignedCourse = context.courseStudentMap.get(a.course.id) || [];
+                if (!studentsInAssignedCourse.includes(studentId)) {
+                    return false;
+                }
+                // Check if exams are too close in time
+                const examEnd = a.timeSlot.endTime.getTime();
+                const newExamStart = timeSlot.startTime.getTime();
+                const existingExamStart = a.timeSlot.startTime.getTime();
+                const newExamEnd = timeSlot.endTime.getTime();
+
+                // Check gap in both directions
+                const gapAfterExisting = newExamStart - examEnd;
+                const gapAfterNew = existingExamStart - newExamEnd;
+
+                return (gapAfterExisting >= 0 && gapAfterExisting < minGapMs) ||
+                    (gapAfterNew >= 0 && gapAfterNew < minGapMs);
+            });
+            if (tooCloseExam) {
+                return false;
+            }
         }
     }
 
@@ -372,11 +401,14 @@ export function generateSchedule(
     const courseStudentMap = buildCourseStudentMap(students);
     const studentCourseMap = buildStudentCourseMap(students);
 
-    // Initialize validation context
+    // Initialize validation context with configurable constraints
     const context: ValidationContext = {
         assignments: [],
         courseStudentMap,
-        studentCourseMap
+        studentCourseMap,
+        maxExamsPerDay: constraints.maxExamsPerDay ?? 2,
+        allowConsecutiveExams: constraints.allowConsecutiveExams ?? true,
+        minHoursBetweenExams: constraints.minHoursBetweenExams ?? 1
     };
 
     // Run the backtracking solver with 5-second timeout
