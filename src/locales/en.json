@@ -108,7 +108,11 @@
         "filterAll": "All",
         "filterRoom": "Room",
         "filterStudent": "Student",
-        "capacityShort": "Cap: {{capacity}}"
+        "capacityShort": "Cap: {{capacity}}",
+        "multipleExams": "{{count}} Exams",
+        "timeSlotDetails": "Time Slot Details",
+        "clickForDetails": "Click for details",
+        "enrolledCount": "Enrolled: {{count}}"
     },
     "settings": {
         "title": "Settings",
@@ -138,7 +142,7 @@
         "constraint1": "A student cannot have two exams at the same time.",
         "constraint2": "Consecutive exams are prevented (optional).",
         "constraint3": "Room capacity cannot be exceeded.",
-        "constraint4":"There should be a one-hour break between exams.",
+        "constraint4": "There should be a one-hour break between exams.",
         "importTitle": "Importing Data",
         "importDesc": "Navigate to Data Management and use the relevant tabs to upload your files.",
         "coursesTab": "Courses Tab",
