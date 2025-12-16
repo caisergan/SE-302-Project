@@ -133,14 +133,16 @@ const App: React.FC = () => {
 
         console.log(`Schedule generated and saved successfully in ${result.stats?.generationTimeMs}ms`);
       } else {
-        // No valid schedule found
-        setGenerationError(result.message);
+        // No valid schedule found - show user-friendly error
+        const errorWithSuggestion = `${result.message}\n\nSuggestions:\n• Add more classrooms\n• Extend the exam date range\n• Reduce overlapping student enrollments`;
+        setGenerationError(errorWithSuggestion);
         setIsGenerated(false);
         console.error('Schedule generation failed:', result.message);
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      setGenerationError(errorMessage);
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      const errorWithSuggestion = `${errorMessage}\n\nPlease check your data and try again.`;
+      setGenerationError(errorWithSuggestion);
       setIsGenerated(false);
       console.error('Schedule generation error:', error);
     } finally {
