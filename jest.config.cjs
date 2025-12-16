@@ -3,8 +3,8 @@ module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
 
-  // tests.tsx kökte
-  testMatch: ['**/tests.tsx'],
+  // tests.tsx kökte + backend test files
+  testMatch: ['**/tests.tsx', '**/*.test.ts'],
 
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 
