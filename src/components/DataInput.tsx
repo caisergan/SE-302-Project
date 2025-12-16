@@ -273,7 +273,7 @@ export const DataInput: React.FC<DataInputProps> = ({
             if (parts.length >= 2) {
                 const name = parts[0].trim();
                 const capacity = parseInt(parts[1].trim(), 10);
-
+                
                 newRooms.push({
                     id: name,
                     name: name,
@@ -303,6 +303,42 @@ export const DataInput: React.FC<DataInputProps> = ({
         }
     };
 
+    
+    const parseSimpleStudentList = async (rows: string[]) => {
+        const newStudents: any[] = [];
+        
+        rows.forEach(row => {
+            const cleanRow = row.trim();
+            
+            if (!cleanRow || cleanRow.includes("ALL OF THE STUDENTS")) return;
+
+            
+            const studentId = cleanRow;
+            newStudents.push({
+                studentNumber: studentId,
+                name: `Student ${studentId}`, 
+                enrolledCourses: [] 
+            });
+        });
+
+        if (newStudents.length > 0) {
+             await window.api.addStudentsBulk(newStudents);
+             
+             const savedStudents = await window.api.getStudents();
+             const mappedStudents = savedStudents.map((s: any) => ({
+                id: s.student_number,
+                name: s.name,
+                email: `${s.student_number.toLowerCase()}@uni.edu`,
+                enrolledCourses: s.enrolled_courses
+             }));
+             setStudents(mappedStudents);
+             
+             showNotification(t('dataInput.importedStudents', { count: newStudents.length }) || `Imported ${newStudents.length} students`, 'success');
+        } else {
+             showNotification(t('dataInput.formatError'), 'error');
+        }
+    };
+
     const parseStudentAttendanceFile = async (rows: string[]) => {
         const studentMap = new Map<string, Set<string>>();
         let currentCourseCode = '';
@@ -315,22 +351,15 @@ export const DataInput: React.FC<DataInputProps> = ({
                 if (!currentCourseCode) return;
 
                 const content = cleanRow.slice(1, -1);
-                const studentIds = content.split(',').map(s => {
-                    return s.trim().replace(/^['"]|['"]$/g, '');
-                });
+                const studentIds = content.split(',').map(s => s.trim().replace(/^['"]|['"]$/g, ''));
 
                 studentIds.forEach(sId => {
                     if (!sId) return;
-                    if (!studentMap.has(sId)) {
-                        studentMap.set(sId, new Set());
-                    }
+                    if (!studentMap.has(sId)) studentMap.set(sId, new Set());
                     studentMap.get(sId)?.add(currentCourseCode);
                 });
-
             } else {
-                if (cleanRow.length < 50) {
-                    currentCourseCode = cleanRow;
-                }
+                if (cleanRow.length < 50) currentCourseCode = cleanRow;
             }
         });
 
@@ -356,7 +385,7 @@ export const DataInput: React.FC<DataInputProps> = ({
             }));
 
             setStudents(mappedStudents);
-
+            
             // Also refresh courses to update enrolled counts
             const savedCourses = await window.api.getCourses();
             const mappedCourses = savedCourses.map((c: any) => ({
@@ -392,6 +421,8 @@ export const DataInput: React.FC<DataInputProps> = ({
         } else if (activeTab === 'students') {
             if (text.includes('[') && text.includes(']')) {
                 parseStudentAttendanceFile(rows);
+            } else if (rows[0].includes('ALL OF THE STUDENTS') || rows.some(r => r.startsWith('Std_ID_'))) {
+                parseSimpleStudentList(rows);
             } else {
                 showNotification(t('dataInput.formatError'), 'error');
             }
@@ -437,17 +468,14 @@ export const DataInput: React.FC<DataInputProps> = ({
                                     <td className="px-6 py-4">{c.name}</td>
 
                                     <td className="px-6 py-4">{c.enrolledStudents}</td>
-                                    <td
-                                        className="px-6 py-4 text-indigo-600 hover:underline cursor-pointer"
+                                    <td className="px-6 py-4 text-indigo-600 hover:underline cursor-pointer"
                                         onClick={() => handleEditClick(c)}
                                     >
                                         {t('common.edit')}
                                     </td>
                                 </tr>
                             ))}
-                            {courses.length === 0 && (
-                                <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-400">{t('dataInput.noCourses')}</td></tr>
-                            )}
+                            {courses.length === 0 && (<tr><td colSpan={5} className="px-6 py-8 text-center text-slate-400">{t('dataInput.noCourses')}</td></tr>)}
                         </tbody>
                     </table>
                 </div>
@@ -472,10 +500,9 @@ export const DataInput: React.FC<DataInputProps> = ({
                                     <td className="px-6 py-4 font-medium text-slate-900">{r.name}</td>
                                     <td className="px-6 py-4">{r.building}</td>
                                     <td className="px-6 py-4">{r.capacity}</td>
+                                    <td className="px-6 py-4 text-indigo-600 hover:underline cursor-pointer" 
+                                    onClick={() => handleEditClick(r)}
 
-                                    <td
-                                        className="px-6 py-4 text-indigo-600 hover:underline cursor-pointer"
-                                        onClick={() => handleEditClick(r)}
                                     >
                                         {t('common.edit')}
                                     </td>

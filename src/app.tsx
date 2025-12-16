@@ -218,7 +218,6 @@ const App: React.FC = () => {
             {renderContent()}
           </div>
 
-          {/* Constraint Modal Overlay */}
           {showConstraintModal && (
             <ConstraintSelector
               onBack={() => setShowConstraintModal(false)}
@@ -226,8 +225,11 @@ const App: React.FC = () => {
             />
           )}
 
-          {/* Help Modal */}
-          <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
+          <HelpModal 
+            isOpen={showHelpModal} 
+            onClose={() => setShowHelpModal(false)}
+            currentView={currentView}
+          />
         </main>
       </div>
     </NotificationProvider>

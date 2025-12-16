@@ -40,7 +40,7 @@ const createWindow = () => {
     );
   }
 
-  mainWindow.webContents.openDevTools();
+  //mainWindow.webContents.openDevTools();
 
   const menuTemplate: Electron.MenuItemConstructorOptions[] = [
     {
