@@ -52,6 +52,20 @@ const MAX_EXAMS_PER_DAY_PER_STUDENT = 2;
 // ============================================================================
 
 /**
+ * Formats a Date as a local ISO string (preserves local timezone).
+ * This prevents the UTC conversion that happens with toISOString().
+ */
+function toLocalISOString(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+}
+
+/**
  * Generates all available time slots based on the given constraints.
  */
 function generateTimeSlots(constraints: GenerationConstraints): TimeSlot[] {
@@ -154,6 +168,9 @@ interface ValidationContext {
     assignments: ScheduleAssignment[];
     courseStudentMap: Map<string, string[]>;
     studentCourseMap: Map<string, string[]>;
+    maxExamsPerDay: number;
+    allowConsecutiveExams: boolean;
+    minHoursBetweenExams: number;
 }
 
 /**
@@ -195,34 +212,62 @@ function isSafe(
             return false;
         }
 
-        // Constraint 4: No Consecutive Exams
-        // A student should not have exams in consecutive time slots on the same day
-        const consecutiveConflict = context.assignments.some((a) => {
-            const studentsInAssignedCourse = context.courseStudentMap.get(a.course.id) || [];
-            if (!studentsInAssignedCourse.includes(studentId)) {
+        // Constraint 4: No Consecutive Exams (configurable)
+        // If disabled, students cannot have exams in consecutive time slots
+        if (!context.allowConsecutiveExams) {
+            const consecutiveConflict = context.assignments.some((a) => {
+                const studentsInAssignedCourse = context.courseStudentMap.get(a.course.id) || [];
+                if (!studentsInAssignedCourse.includes(studentId)) {
+                    return false;
+                }
+                if (a.timeSlot.dayIndex === timeSlot.dayIndex) {
+                    const slotDiff = Math.abs(a.timeSlot.slotIndex - timeSlot.slotIndex);
+                    return slotDiff === 1;
+                }
+                return false;
+            });
+            if (consecutiveConflict) {
                 return false;
             }
-            // Check if on the same day and consecutive slot
-            if (a.timeSlot.dayIndex === timeSlot.dayIndex) {
-                const slotDiff = Math.abs(a.timeSlot.slotIndex - timeSlot.slotIndex);
-                return slotDiff === 1;
-            }
-            return false;
-        });
-        if (consecutiveConflict) {
-            return false;
         }
 
-        // Constraint 5: Maximum Daily Exams
-        // A student cannot have more than MAX_EXAMS_PER_DAY_PER_STUDENT exams on the same day
+        // Constraint 5: Maximum Daily Exams (configurable)
+        // A student cannot have more than maxExamsPerDay exams on the same day
         const examsOnSameDay = context.assignments.filter((a) => {
             const studentsInAssignedCourse = context.courseStudentMap.get(a.course.id) || [];
             return studentsInAssignedCourse.includes(studentId) &&
                 a.timeSlot.dayIndex === timeSlot.dayIndex;
         }).length;
 
-        if (examsOnSameDay >= MAX_EXAMS_PER_DAY_PER_STUDENT) {
+        if (examsOnSameDay >= context.maxExamsPerDay) {
             return false;
+        }
+
+        // Constraint 6: Minimum Hours Between Exams (configurable)
+        // Ensure there's at least minHoursBetweenExams gap between exams for same student
+        if (context.minHoursBetweenExams > 0) {
+            const minGapMs = context.minHoursBetweenExams * 60 * 60 * 1000; // Convert hours to ms
+            const tooCloseExam = context.assignments.some((a) => {
+                const studentsInAssignedCourse = context.courseStudentMap.get(a.course.id) || [];
+                if (!studentsInAssignedCourse.includes(studentId)) {
+                    return false;
+                }
+                // Check if exams are too close in time
+                const examEnd = a.timeSlot.endTime.getTime();
+                const newExamStart = timeSlot.startTime.getTime();
+                const existingExamStart = a.timeSlot.startTime.getTime();
+                const newExamEnd = timeSlot.endTime.getTime();
+
+                // Check gap in both directions
+                const gapAfterExisting = newExamStart - examEnd;
+                const gapAfterNew = existingExamStart - newExamEnd;
+
+                return (gapAfterExisting >= 0 && gapAfterExisting < minGapMs) ||
+                    (gapAfterNew >= 0 && gapAfterNew < minGapMs);
+            });
+            if (tooCloseExam) {
+                return false;
+            }
         }
     }
 
@@ -241,6 +286,8 @@ function isSafe(
  * @param timeSlots - Available time slots
  * @param context - Validation context with current assignments
  * @param index - Current index in the courses array
+ * @param iterationCount - Reference object to track iterations
+ * @param maxIterations - Maximum allowed iterations before timeout
  * @returns true if a valid schedule was found, false otherwise
  */
 function solve(
@@ -248,8 +295,15 @@ function solve(
     classrooms: Classroom[],
     timeSlots: TimeSlot[],
     context: ValidationContext,
-    index: number
+    index: number,
+    startTime: number,
+    timeoutMs: number
 ): boolean {
+    // Check for timeout (time-based, not iteration-based)
+    if (Date.now() - startTime > timeoutMs) {
+        return false; // Stop trying - timeout reached
+    }
+
     // Base case: All courses have been scheduled
     if (index === courses.length) {
         return true;
@@ -259,6 +313,11 @@ function solve(
 
     // Try each time slot
     for (const timeSlot of timeSlots) {
+        // Check for timeout in inner loop
+        if (Date.now() - startTime > timeoutMs) {
+            return false;
+        }
+
         // Try each classroom
         for (const classroom of classrooms) {
             // Check if this assignment satisfies all constraints
@@ -272,7 +331,7 @@ function solve(
                 context.assignments.push(assignment);
 
                 // Recursively try to schedule the remaining courses
-                if (solve(courses, classrooms, timeSlots, context, index + 1)) {
+                if (solve(courses, classrooms, timeSlots, context, index + 1, startTime, timeoutMs)) {
                     return true;
                 }
 
@@ -342,24 +401,32 @@ export function generateSchedule(
     const courseStudentMap = buildCourseStudentMap(students);
     const studentCourseMap = buildStudentCourseMap(students);
 
-    // Initialize validation context
+    // Initialize validation context with configurable constraints
     const context: ValidationContext = {
         assignments: [],
         courseStudentMap,
-        studentCourseMap
+        studentCourseMap,
+        maxExamsPerDay: constraints.maxExamsPerDay ?? 2,
+        allowConsecutiveExams: constraints.allowConsecutiveExams ?? true,
+        minHoursBetweenExams: constraints.minHoursBetweenExams ?? 1
     };
 
-    // Run the backtracking solver
-    const success = solve(sortedCourses, classrooms, timeSlots, context, 0);
+    // Run the backtracking solver with 5-second timeout
+    const timeoutMs = 5000; // 5 seconds
+    const success = solve(sortedCourses, classrooms, timeSlots, context, 0, startTime, timeoutMs);
 
     const endTime = Date.now();
+    const timedOut = (endTime - startTime) >= timeoutMs;
 
     if (!success) {
+        const timeoutMessage = timedOut
+            ? 'The algorithm timed out while searching for a valid schedule. '
+            : 'Unable to generate a valid schedule. ';
         return {
             success: false,
             schedule: [],
-            message: 'Unable to generate a valid schedule. The constraints are too restrictive. ' +
-                'Try adding more classrooms, extending the exam period, or reducing course enrollments.',
+            message: timeoutMessage +
+                'The constraints are too restrictive. Try adding more classrooms, extending the exam period, or reducing course enrollments.',
             stats: {
                 totalCourses: courses.length,
                 scheduledCourses: context.assignments.length,

@@ -21,6 +21,8 @@ export const ConstraintSelector: React.FC<ConstraintSelectorProps> = ({ onBack, 
     const [includeWeekends, setIncludeWeekends] = useState<boolean>(false);
     const [dailyStartTime, setDailyStartTime] = useState<string>("09:00");
     const [dailyEndTime, setDailyEndTime] = useState<string>("17:00");
+    const [maxExamsPerDay, setMaxExamsPerDay] = useState<number>(2);
+    const [minHoursBetweenExams, setMinHoursBetweenExams] = useState<number>(1);
 
     const handleGenerate = () => {
         onGenerate({
@@ -28,7 +30,10 @@ export const ConstraintSelector: React.FC<ConstraintSelectorProps> = ({ onBack, 
             endDate: new Date(endDate),
             includeWeekends,
             dailyStartTime,
-            dailyEndTime
+            dailyEndTime,
+            maxExamsPerDay,
+            allowConsecutiveExams: minHoursBetweenExams === 0, // Derived from hours
+            minHoursBetweenExams
         });
     };
 
@@ -130,6 +135,48 @@ export const ConstraintSelector: React.FC<ConstraintSelectorProps> = ({ onBack, 
                                     <p className="text-xs text-slate-500 mt-1">
                                         {t('constraintsModal.timeWarning')}
                                     </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Student Constraints Section */}
+                        <div className="space-y-5 md:col-span-2">
+                            <h3 className="text-sm font-bold text-indigo-600 uppercase tracking-wider">{t('constraints.studentConstraints', 'Student Constraints')}</h3>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                                        {t('constraints.maxExamsPerDay', 'Max Exams Per Student Per Day')}
+                                    </label>
+                                    <select
+                                        value={maxExamsPerDay}
+                                        onChange={(e) => setMaxExamsPerDay(Number(e.target.value))}
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                    >
+                                        <option value={1}>1</option>
+                                        <option value={2}>2</option>
+                                        <option value={3}>3</option>
+                                        <option value={4}>4 (No limit)</option>
+                                    </select>
+                                </div>
+
+
+
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                                        {t('constraints.minHoursBetweenExams', 'Minimum Hours Between Exams')}
+                                    </label>
+                                    <select
+                                        value={minHoursBetweenExams}
+                                        onChange={(e) => setMinHoursBetweenExams(Number(e.target.value))}
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                                    >
+                                        <option value={0}>0 (No minimum)</option>
+                                        <option value={1}>1 hour</option>
+                                        <option value={2}>2 hours</option>
+                                        <option value={3}>3 hours</option>
+                                        <option value={4}>4 hours</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
