@@ -345,6 +345,59 @@ function solve(
     return false;
 }
 
+/**
+ * Greedy scheduling algorithm - faster for large datasets.
+ * Assigns each course to the first valid time slot/room combination.
+ * O(courses * timeSlots * classrooms) - much faster than backtracking.
+ */
+function solveGreedy(
+    courses: Course[],
+    classrooms: Classroom[],
+    timeSlots: TimeSlot[],
+    context: ValidationContext
+): boolean {
+    console.log(`Greedy solver: ${courses.length} courses, ${timeSlots.length} slots, ${classrooms.length} rooms`);
+
+    for (let i = 0; i < courses.length; i++) {
+        const course = courses[i];
+        let assigned = false;
+
+        // Try each time slot
+        for (const timeSlot of timeSlots) {
+            if (assigned) break;
+
+            // Try each classroom
+            for (const classroom of classrooms) {
+                if (isSafe(course, classroom, timeSlot, context)) {
+                    // Make the assignment
+                    context.assignments.push({
+                        course,
+                        classroom,
+                        timeSlot
+                    });
+                    assigned = true;
+                    break;
+                }
+            }
+        }
+
+        if (!assigned) {
+            // Could not find a valid slot for this course
+            console.log(`FAILED at course ${i + 1}/${courses.length}: ${course.code} (${course.enrolledStudents} students)`);
+            console.log(`  Scheduled so far: ${context.assignments.length} courses`);
+            return false;
+        }
+
+        // Progress log every 20 courses
+        if ((i + 1) % 20 === 0) {
+            console.log(`  Progress: ${i + 1}/${courses.length} courses scheduled`);
+        }
+    }
+
+    console.log(`SUCCESS: All ${courses.length} courses scheduled!`);
+    return true; // All courses scheduled
+}
+
 // ============================================================================
 // Main Scheduling Function
 // ============================================================================
@@ -411,12 +464,27 @@ export function generateSchedule(
         minHoursBetweenExams: constraints.minHoursBetweenExams ?? 1
     };
 
-    // Run the backtracking solver with 5-second timeout
-    const timeoutMs = 5000; // 5 seconds
-    const success = solve(sortedCourses, classrooms, timeSlots, context, 0, startTime, timeoutMs);
+    // Choose algorithm based on dataset size
+    // Greedy: Fast, good for large datasets (50+ courses)
+    // Backtracking: Slower but can find solutions where greedy fails (small datasets)
+    const useGreedy = courses.length >= 50;
+    let success: boolean;
+    let timedOut = false;
+
+    if (useGreedy) {
+        console.log(`Using GREEDY algorithm for ${courses.length} courses (fast mode)`);
+        success = solveGreedy(sortedCourses, classrooms, timeSlots, context);
+    } else {
+        // Use backtracking with timeout for smaller datasets
+        const baseTimeout = 5000;
+        const scaleFactor = Math.max(1, Math.ceil(courses.length / 20));
+        const timeoutMs = Math.min(baseTimeout * scaleFactor, 30000);
+        console.log(`Using BACKTRACKING algorithm for ${courses.length} courses (timeout: ${timeoutMs}ms)`);
+        success = solve(sortedCourses, classrooms, timeSlots, context, 0, startTime, timeoutMs);
+        timedOut = (Date.now() - startTime) >= timeoutMs;
+    }
 
     const endTime = Date.now();
-    const timedOut = (endTime - startTime) >= timeoutMs;
 
     if (!success) {
         const timeoutMessage = timedOut
