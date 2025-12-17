@@ -29,17 +29,43 @@ interface ScheduleAssignment {
 /**
  * Detailed reason why a course could not be scheduled
  */
+interface ConstraintViolation {
+    type: 'capacity' | 'room_conflict' | 'student_conflict' | 'consecutive_exam' | 'max_daily_exams' | 'min_hours_gap';
+    severity: 'blocking' | 'contributing';
+    description: string;
+    details: {
+        affectedStudentCount?: number;
+        sampleStudents?: string[];
+        conflictingCourses?: string[];
+        blockedSlots?: number;
+        requiredCapacity?: number;
+        maxAvailableCapacity?: number;
+    };
+}
+
 interface FailureReason {
     courseCode: string;
     courseEnrollment: number;
-    constraintViolations: {
-        type: 'capacity' | 'room_conflict' | 'student_conflict' | 'consecutive_exam' | 'max_daily_exams' | 'min_hours_gap';
-        description: string;
-        affectedStudents?: string[];
-        conflictingCourse?: string;
+    courseIndex: number;
+    totalCourses: number;
+    rootCause: string;
+    rootCauseType: ConstraintViolation['type'];
+    constraintViolations: ConstraintViolation[];
+    suggestions: {
+        priority: 'high' | 'medium' | 'low';
+        action: string;
+        impact: string;
     }[];
-    testedSlots: number;
-    testedRooms: number;
+    diagnostics: {
+        testedSlots: number;
+        testedRooms: number;
+        scheduledSoFar: number;
+        availableSlots: number;
+        availableRooms: number;
+        slotsBlockedByStudentConflicts: number;
+        slotsBlockedByRoomConflicts: number;
+        roomsBlockedByCapacity: number;
+    };
 }
 
 interface ScheduleResult {
@@ -293,130 +319,112 @@ function isSafe(
 
 /**
  * Analyzes why a course cannot be scheduled in any slot.
- * Returns detailed information about constraint violations.
+ * Returns detailed information about constraint violations with root cause analysis.
  */
 function getFailureReason(
     course: Course,
     classrooms: Classroom[],
     timeSlots: TimeSlot[],
-    context: ValidationContext
+    context: ValidationContext,
+    courseIndex: number = 0,
+    totalCourses: number = 0
 ): FailureReason {
-    const violations: FailureReason['constraintViolations'] = [];
-    let testedSlots = 0;
-    let testedRooms = 0;
+    const violations: ConstraintViolation[] = [];
 
-    // Track different failure types
-    const capacityFails: string[] = [];
-    const roomConflicts: { room: string; slot: string; conflictCourse: string }[] = [];
-    const studentConflicts: { student: string; slot: string; conflictCourse: string }[] = [];
-    const consecutiveFails: { student: string; conflictCourse: string }[] = [];
-    const maxDailyFails: { student: string; day: number; existingExams: number }[] = [];
-    const minHoursFails: { student: string; conflictCourse: string; gapHours: number }[] = [];
+    // Diagnostic counters
+    let slotsBlockedByStudentConflicts = 0;
+    let slotsBlockedByRoomConflicts = 0;
+    let roomsBlockedByCapacity = 0;
+
+    // Track different failure types with details
+    const capacityIssue = { rooms: [] as string[], maxCapacity: 0 };
+    const studentConflictMap = new Map<string, { students: Set<string>; slots: number }>();
+    const maxDailyIssue = { affectedStudents: new Set<string>(), blockedDays: new Set<number>() };
+    const minHoursIssue = { affectedStudents: new Set<string>(), courses: new Set<string>() };
+    const consecutiveIssue = { affectedStudents: new Set<string>(), courses: new Set<string>() };
 
     const studentsInCourse = context.courseStudentMap.get(course.id) || [];
+    const roomsWithCapacity = classrooms.filter(c => c.capacity >= course.enrolledStudents);
 
+    // Calculate capacity stats
+    const maxRoomCapacity = Math.max(...classrooms.map(c => c.capacity), 0);
+    roomsBlockedByCapacity = classrooms.length - roomsWithCapacity.length;
+
+    // Analyze each slot
     for (const timeSlot of timeSlots) {
-        testedSlots++;
-
-        for (const classroom of classrooms) {
-            testedRooms++;
-
-            // Check capacity
-            if (classroom.capacity < course.enrolledStudents) {
-                if (!capacityFails.includes(classroom.name)) {
-                    capacityFails.push(classroom.name);
-                }
-                continue;
-            }
-
-            // Check room conflict
+        for (const classroom of roomsWithCapacity) {
+            // Check room already booked
             const roomConflict = context.assignments.find(
                 (a) => a.classroom.id === classroom.id && a.timeSlot.id === timeSlot.id
             );
             if (roomConflict) {
-                roomConflicts.push({
-                    room: classroom.name,
-                    slot: timeSlot.startTime.toISOString(),
-                    conflictCourse: roomConflict.course.code
-                });
+                slotsBlockedByRoomConflicts++;
                 continue;
             }
 
-            // Check student conflicts
-            let hasStudentConflict = false;
+            // Check student conflicts (most important)
+            let slotBlocked = false;
             for (const studentId of studentsInCourse) {
+                // Same time conflict
                 const sameTimeConflict = context.assignments.find((a) => {
                     const studentsInAssignedCourse = context.courseStudentMap.get(a.course.id) || [];
                     return studentsInAssignedCourse.includes(studentId) && a.timeSlot.id === timeSlot.id;
                 });
                 if (sameTimeConflict) {
-                    studentConflicts.push({
-                        student: studentId,
-                        slot: timeSlot.startTime.toISOString(),
-                        conflictCourse: sameTimeConflict.course.code
-                    });
-                    hasStudentConflict = true;
+                    if (!studentConflictMap.has(sameTimeConflict.course.code)) {
+                        studentConflictMap.set(sameTimeConflict.course.code, { students: new Set(), slots: 0 });
+                    }
+                    const entry = studentConflictMap.get(sameTimeConflict.course.code)!;
+                    entry.students.add(studentId);
+                    entry.slots++;
+                    slotsBlockedByStudentConflicts++;
+                    slotBlocked = true;
                     break;
                 }
 
-                // Check consecutive exams
-                if (!context.allowConsecutiveExams) {
-                    const consecutiveConflict = context.assignments.find((a) => {
-                        const studentsInAssignedCourse = context.courseStudentMap.get(a.course.id) || [];
-                        if (!studentsInAssignedCourse.includes(studentId)) return false;
-                        if (a.timeSlot.dayIndex === timeSlot.dayIndex) {
-                            return Math.abs(a.timeSlot.slotIndex - timeSlot.slotIndex) === 1;
-                        }
-                        return false;
-                    });
-                    if (consecutiveConflict) {
-                        consecutiveFails.push({
-                            student: studentId,
-                            conflictCourse: consecutiveConflict.course.code
-                        });
-                        hasStudentConflict = true;
-                        break;
-                    }
-                }
-
-                // Check max daily exams
+                // Max daily exams
                 const examsOnSameDay = context.assignments.filter((a) => {
                     const studentsInAssignedCourse = context.courseStudentMap.get(a.course.id) || [];
                     return studentsInAssignedCourse.includes(studentId) && a.timeSlot.dayIndex === timeSlot.dayIndex;
                 }).length;
                 if (examsOnSameDay >= context.maxExamsPerDay) {
-                    maxDailyFails.push({
-                        student: studentId,
-                        day: timeSlot.dayIndex,
-                        existingExams: examsOnSameDay
-                    });
-                    hasStudentConflict = true;
+                    maxDailyIssue.affectedStudents.add(studentId);
+                    maxDailyIssue.blockedDays.add(timeSlot.dayIndex);
+                    slotBlocked = true;
                     break;
                 }
 
-                // Check min hours gap
+                // Consecutive exams
+                if (!context.allowConsecutiveExams) {
+                    const consecutiveConflict = context.assignments.find((a) => {
+                        const studentsInAssignedCourse = context.courseStudentMap.get(a.course.id) || [];
+                        if (!studentsInAssignedCourse.includes(studentId)) return false;
+                        return a.timeSlot.dayIndex === timeSlot.dayIndex &&
+                            Math.abs(a.timeSlot.slotIndex - timeSlot.slotIndex) === 1;
+                    });
+                    if (consecutiveConflict) {
+                        consecutiveIssue.affectedStudents.add(studentId);
+                        consecutiveIssue.courses.add(consecutiveConflict.course.code);
+                        slotBlocked = true;
+                        break;
+                    }
+                }
+
+                // Min hours gap
                 if (context.minHoursBetweenExams > 0) {
                     const minGapMs = context.minHoursBetweenExams * 60 * 60 * 1000;
                     const tooCloseExam = context.assignments.find((a) => {
                         const studentsInAssignedCourse = context.courseStudentMap.get(a.course.id) || [];
                         if (!studentsInAssignedCourse.includes(studentId)) return false;
-                        const examEnd = a.timeSlot.endTime.getTime();
-                        const newExamStart = timeSlot.startTime.getTime();
-                        const existingExamStart = a.timeSlot.startTime.getTime();
-                        const newExamEnd = timeSlot.endTime.getTime();
-                        const gapAfterExisting = newExamStart - examEnd;
-                        const gapAfterNew = existingExamStart - newExamEnd;
+                        const gapAfterExisting = timeSlot.startTime.getTime() - a.timeSlot.endTime.getTime();
+                        const gapAfterNew = a.timeSlot.startTime.getTime() - timeSlot.endTime.getTime();
                         return (gapAfterExisting >= 0 && gapAfterExisting < minGapMs) ||
                             (gapAfterNew >= 0 && gapAfterNew < minGapMs);
                     });
                     if (tooCloseExam) {
-                        const gapMs = Math.abs(timeSlot.startTime.getTime() - tooCloseExam.timeSlot.endTime.getTime());
-                        minHoursFails.push({
-                            student: studentId,
-                            conflictCourse: tooCloseExam.course.code,
-                            gapHours: gapMs / (60 * 60 * 1000)
-                        });
-                        hasStudentConflict = true;
+                        minHoursIssue.affectedStudents.add(studentId);
+                        minHoursIssue.courses.add(tooCloseExam.course.code);
+                        slotBlocked = true;
                         break;
                     }
                 }
@@ -424,68 +432,175 @@ function getFailureReason(
         }
     }
 
-    // Build violation descriptions
-    if (capacityFails.length === classrooms.length) {
+    // Determine root cause and build violations
+    let rootCause = '';
+    let rootCauseType: ConstraintViolation['type'] = 'capacity';
+
+    // Priority 1: Capacity issue (no room can fit)
+    if (roomsWithCapacity.length === 0) {
+        rootCause = `NO ROOM AVAILABLE: Course has ${course.enrolledStudents} students but largest room only has ${maxRoomCapacity} seats.`;
+        rootCauseType = 'capacity';
         violations.push({
             type: 'capacity',
-            description: `No classroom has enough capacity for ${course.enrolledStudents} students. ` +
-                `Largest room: ${Math.max(...classrooms.map(c => c.capacity))} seats.`
+            severity: 'blocking',
+            description: `Need ${course.enrolledStudents - maxRoomCapacity} more seats. No room is large enough.`,
+            details: {
+                requiredCapacity: course.enrolledStudents,
+                maxAvailableCapacity: maxRoomCapacity
+            }
         });
     }
+    // Priority 2: Student conflicts blocking all slots
+    else if (studentConflictMap.size > 0) {
+        const topConflict = [...studentConflictMap.entries()].sort((a, b) => b[1].students.size - a[1].students.size)[0];
+        const [conflictCourse, data] = topConflict;
+        rootCause = `STUDENT CONFLICT: ${data.students.size} students share both ${course.code} and ${conflictCourse}. All available slots are blocked.`;
+        rootCauseType = 'student_conflict';
 
-    if (studentConflicts.length > 0) {
-        const uniqueConflicts = new Map<string, string[]>();
-        studentConflicts.forEach(c => {
-            if (!uniqueConflicts.has(c.conflictCourse)) {
-                uniqueConflicts.set(c.conflictCourse, []);
-            }
-            uniqueConflicts.get(c.conflictCourse)!.push(c.student);
-        });
-
-        uniqueConflicts.forEach((students, conflictCourse) => {
+        studentConflictMap.forEach((data, conflictCourse) => {
             violations.push({
                 type: 'student_conflict',
-                description: `${students.length} student(s) are also in ${conflictCourse} which blocks all remaining slots.`,
-                affectedStudents: students.slice(0, 5),
-                conflictingCourse: conflictCourse
+                severity: data.slots > timeSlots.length / 2 ? 'blocking' : 'contributing',
+                description: `${data.students.size} students also enrolled in ${conflictCourse}`,
+                details: {
+                    affectedStudentCount: data.students.size,
+                    sampleStudents: [...data.students].slice(0, 3),
+                    conflictingCourses: [conflictCourse],
+                    blockedSlots: data.slots
+                }
             });
         });
     }
-
-    if (maxDailyFails.length > 0) {
-        const uniqueDays = new Set(maxDailyFails.map(f => f.day));
+    // Priority 3: Max daily exams
+    else if (maxDailyIssue.affectedStudents.size > 0) {
+        rootCause = `MAX DAILY LIMIT: ${maxDailyIssue.affectedStudents.size} students already have ${context.maxExamsPerDay} exams on ${maxDailyIssue.blockedDays.size} day(s).`;
+        rootCauseType = 'max_daily_exams';
         violations.push({
             type: 'max_daily_exams',
-            description: `Students already have ${context.maxExamsPerDay} exams on ${uniqueDays.size} day(s), ` +
-                `blocking those days (max ${context.maxExamsPerDay}/day allowed).`,
-            affectedStudents: [...new Set(maxDailyFails.map(f => f.student))].slice(0, 5)
+            severity: 'blocking',
+            description: `Daily limit of ${context.maxExamsPerDay} exams reached for students`,
+            details: {
+                affectedStudentCount: maxDailyIssue.affectedStudents.size,
+                sampleStudents: [...maxDailyIssue.affectedStudents].slice(0, 3),
+                blockedSlots: maxDailyIssue.blockedDays.size * (timeSlots.length / (new Set(timeSlots.map(t => t.dayIndex)).size || 1))
+            }
         });
     }
-
-    if (minHoursFails.length > 0) {
+    // Priority 4: Min hours gap
+    else if (minHoursIssue.affectedStudents.size > 0) {
+        rootCause = `TIME GAP VIOLATION: ${context.minHoursBetweenExams}h gap required but conflicts with ${[...minHoursIssue.courses].join(', ')}.`;
+        rootCauseType = 'min_hours_gap';
         violations.push({
             type: 'min_hours_gap',
-            description: `Exams would be too close together (need ${context.minHoursBetweenExams}h gap). ` +
-                `Conflicts with: ${[...new Set(minHoursFails.map(f => f.conflictCourse))].join(', ')}.`,
-            affectedStudents: [...new Set(minHoursFails.map(f => f.student))].slice(0, 5)
+            severity: 'blocking',
+            description: `Need ${context.minHoursBetweenExams}h gap between exams`,
+            details: {
+                affectedStudentCount: minHoursIssue.affectedStudents.size,
+                sampleStudents: [...minHoursIssue.affectedStudents].slice(0, 3),
+                conflictingCourses: [...minHoursIssue.courses]
+            }
+        });
+    }
+    // Priority 5: Consecutive exams
+    else if (consecutiveIssue.affectedStudents.size > 0) {
+        rootCause = `CONSECUTIVE EXAM BAN: Would place back-to-back with ${[...consecutiveIssue.courses].join(', ')}.`;
+        rootCauseType = 'consecutive_exam';
+        violations.push({
+            type: 'consecutive_exam',
+            severity: 'blocking',
+            description: 'Consecutive exams not allowed for same student',
+            details: {
+                affectedStudentCount: consecutiveIssue.affectedStudents.size,
+                sampleStudents: [...consecutiveIssue.affectedStudents].slice(0, 3),
+                conflictingCourses: [...consecutiveIssue.courses]
+            }
+        });
+    }
+    // Fallback: General resource constraint
+    else {
+        rootCause = `RESOURCE EXHAUSTED: All ${timeSlots.length} slots × ${roomsWithCapacity.length} rooms are occupied or blocked.`;
+        rootCauseType = 'room_conflict';
+        violations.push({
+            type: 'room_conflict',
+            severity: 'blocking',
+            description: 'All available time/room combinations are already used',
+            details: { blockedSlots: slotsBlockedByRoomConflicts }
         });
     }
 
-    if (consecutiveFails.length > 0) {
-        violations.push({
-            type: 'consecutive_exam',
-            description: `Would create consecutive exams for students (not allowed). ` +
-                `Conflicts with: ${[...new Set(consecutiveFails.map(f => f.conflictCourse))].join(', ')}.`,
-            affectedStudents: [...new Set(consecutiveFails.map(f => f.student))].slice(0, 5)
+    // Generate precise suggestions based on root cause
+    const suggestions: FailureReason['suggestions'] = [];
+
+    if (rootCauseType === 'capacity') {
+        suggestions.push({
+            priority: 'high',
+            action: `Add a room with ${course.enrolledStudents}+ seats`,
+            impact: `Will immediately allow scheduling ${course.code}`
+        });
+    }
+
+    if (rootCauseType === 'student_conflict' && studentConflictMap.size > 0) {
+        const topConflict = [...studentConflictMap.entries()].sort((a, b) => b[1].students.size - a[1].students.size)[0];
+        suggestions.push({
+            priority: 'high',
+            action: `Add ${Math.ceil(timeSlots.length * 0.3)} more time slots (extend exam period by 1-2 days)`,
+            impact: `Creates room for ${course.code} and ${topConflict[0]} at different times`
+        });
+        suggestions.push({
+            priority: 'medium',
+            action: `Add ${Math.ceil(roomsWithCapacity.length * 0.5)} more large classrooms`,
+            impact: 'Enables parallel scheduling of conflicting courses'
+        });
+    }
+
+    if (rootCauseType === 'max_daily_exams') {
+        suggestions.push({
+            priority: 'high',
+            action: `Increase max exams per day from ${context.maxExamsPerDay} to ${context.maxExamsPerDay + 1}`,
+            impact: `Frees up ${maxDailyIssue.blockedDays.size} days for ${course.code}`
+        });
+        suggestions.push({
+            priority: 'medium',
+            action: 'Extend exam period by 2+ days',
+            impact: `Spreads exams over more days for ${maxDailyIssue.affectedStudents.size} students`
+        });
+    }
+
+    if (rootCauseType === 'min_hours_gap') {
+        suggestions.push({
+            priority: 'high',
+            action: `Reduce minimum hours gap from ${context.minHoursBetweenExams}h to ${Math.max(0, context.minHoursBetweenExams - 1)}h`,
+            impact: `Opens ${Math.ceil(timeSlots.length * 0.2)} more slot combinations`
+        });
+    }
+
+    if (rootCauseType === 'consecutive_exam') {
+        suggestions.push({
+            priority: 'high',
+            action: 'Allow consecutive exams (enable in settings)',
+            impact: `Unblocks slots adjacent to ${[...consecutiveIssue.courses].join(', ')}`
         });
     }
 
     return {
         courseCode: course.code,
         courseEnrollment: course.enrolledStudents,
+        courseIndex,
+        totalCourses,
+        rootCause,
+        rootCauseType,
         constraintViolations: violations,
-        testedSlots,
-        testedRooms
+        suggestions,
+        diagnostics: {
+            testedSlots: timeSlots.length,
+            testedRooms: roomsWithCapacity.length * timeSlots.length,
+            scheduledSoFar: context.assignments.length,
+            availableSlots: timeSlots.length,
+            availableRooms: roomsWithCapacity.length,
+            slotsBlockedByStudentConflicts,
+            slotsBlockedByRoomConflicts,
+            roomsBlockedByCapacity
+        }
     };
 }
 
@@ -599,10 +714,9 @@ function solveGreedy(
 
         if (!assigned) {
             // Could not find a valid slot for this course - analyze why
-            const failureReason = getFailureReason(course, classrooms, timeSlots, context);
+            const failureReason = getFailureReason(course, classrooms, timeSlots, context, i, courses.length);
             console.log(`FAILED at course ${i + 1}/${courses.length}: ${course.code} (${course.enrolledStudents} students)`);
-            console.log(`  Scheduled so far: ${context.assignments.length} courses`);
-            console.log(`  Violations:`, failureReason.constraintViolations.map(v => v.description));
+            console.log(`  Root cause: ${failureReason.rootCause}`);
             return { success: false, failureReason };
         }
 
@@ -706,8 +820,9 @@ export function generateSchedule(
 
         // If backtracking failed, get failure reason for the first unscheduled course
         if (!success && sortedCourses.length > context.assignments.length) {
-            const failedCourse = sortedCourses[context.assignments.length];
-            failureDetails = getFailureReason(failedCourse, classrooms, timeSlots, context);
+            const failedCourseIndex = context.assignments.length;
+            const failedCourse = sortedCourses[failedCourseIndex];
+            failureDetails = getFailureReason(failedCourse, classrooms, timeSlots, context, failedCourseIndex, sortedCourses.length);
         }
     }
 
@@ -716,22 +831,41 @@ export function generateSchedule(
     if (!success) {
         // Build detailed error message
         let detailedMessage = timedOut
-            ? 'The algorithm timed out while searching for a valid schedule. '
-            : 'Unable to generate a valid schedule. ';
+            ? '⏱️ TIMEOUT: The algorithm took too long searching for a valid schedule.\n'
+            : '❌ SCHEDULING FAILED\n';
 
         if (failureDetails) {
-            detailedMessage += `\n\nFailed at course: ${failureDetails.courseCode} (${failureDetails.courseEnrollment} students)\n`;
-            if (failureDetails.constraintViolations.length > 0) {
-                detailedMessage += '\nConstraint violations:\n';
-                failureDetails.constraintViolations.forEach((v, i) => {
-                    detailedMessage += `${i + 1}. ${v.description}\n`;
+            // Header with progress info
+            detailedMessage += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+            detailedMessage += `📊 Progress: ${failureDetails.diagnostics.scheduledSoFar}/${failureDetails.totalCourses} courses scheduled\n`;
+            detailedMessage += `🚫 Failed at: ${failureDetails.courseCode} (${failureDetails.courseEnrollment} students)\n`;
+            detailedMessage += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+
+            // Root cause (the main reason)
+            detailedMessage += `\n🔍 ROOT CAUSE:\n`;
+            detailedMessage += `   ${failureDetails.rootCause}\n`;
+
+            // Suggestions with priority
+            if (failureDetails.suggestions.length > 0) {
+                detailedMessage += `\n💡 HOW TO FIX:\n`;
+                failureDetails.suggestions.forEach((s, i) => {
+                    const icon = s.priority === 'high' ? '🔴' : s.priority === 'medium' ? '🟡' : '🟢';
+                    detailedMessage += `   ${icon} ${s.action}\n`;
+                    detailedMessage += `      → ${s.impact}\n`;
                 });
             }
-            detailedMessage += `\nTested ${failureDetails.testedSlots} time slots × ${failureDetails.testedRooms} room combinations.`;
-        }
 
-        detailedMessage += '\n\nSuggestions: Try adding more classrooms, extending the exam period, ' +
-            'increasing max exams per day, or reducing the minimum hours between exams.';
+            // Diagnostics summary
+            detailedMessage += `\n📈 DIAGNOSTICS:\n`;
+            detailedMessage += `   • Tested: ${failureDetails.diagnostics.testedSlots} slots × ${failureDetails.diagnostics.availableRooms} rooms\n`;
+            detailedMessage += `   • Blocked by student conflicts: ${failureDetails.diagnostics.slotsBlockedByStudentConflicts} combinations\n`;
+            detailedMessage += `   • Blocked by room conflicts: ${failureDetails.diagnostics.slotsBlockedByRoomConflicts} combinations\n`;
+            if (failureDetails.diagnostics.roomsBlockedByCapacity > 0) {
+                detailedMessage += `   • Rooms too small: ${failureDetails.diagnostics.roomsBlockedByCapacity}/${classrooms.length}\n`;
+            }
+        } else {
+            detailedMessage += '\nNo detailed failure information available.';
+        }
 
         return {
             success: false,
