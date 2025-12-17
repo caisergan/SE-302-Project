@@ -37,7 +37,17 @@ export const saveSchedule = (sessions: ExamSessionInput[]): void => {
 
     const insertMany = db.transaction((sessionsList: ExamSessionInput[]) => {
         for (const session of sessionsList) {
-            insert.run(session);
+            // Ensure startTime and endTime are strings (Time Conversion Fix)
+            const sessionData = {
+                ...session,
+                startTime: typeof session.startTime === 'string'
+                    ? session.startTime
+                    : (session.startTime as unknown as Date).toISOString(),
+                endTime: typeof session.endTime === 'string'
+                    ? session.endTime
+                    : (session.endTime as unknown as Date).toISOString(),
+            };
+            insert.run(sessionData);
         }
     });
 

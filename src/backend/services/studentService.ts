@@ -1,4 +1,5 @@
 import db from '../database/db';
+import * as courseService from './courseService';
 
 export interface StudentDB {
     id: number;
@@ -46,11 +47,7 @@ export const getStudents = (): StudentWithCourses[] => {
 };
 
 export const addStudentsBulk = (students: { studentNumber: string; name: string; enrolledCourses: string[] }[]): void => {
-    // We need to handle this carefully.
-    // 1. Insert students (ignore if exists, or maybe we should clear first? The user asked for "Import", usually implies adding to or replacing. 
-    // The current frontend logic seems to be "add to existing".
-    // However, for bulk import, it's often cleaner to assume we might be adding new ones.
-    // Let's use INSERT OR IGNORE for students based on student_number.
+    // INSERT OR IGNORE will ignore the insert if the student_number already exists.
 
     const insertStudent = db.prepare('INSERT OR IGNORE INTO students (student_number, name) VALUES (@studentNumber, @name)');
     const getStudentId = db.prepare('SELECT id FROM students WHERE student_number = ?');
@@ -75,6 +72,9 @@ export const addStudentsBulk = (students: { studentNumber: string; name: string;
     });
 
     transaction(students);
+    // Sync enrollment counts after bulk import
+    // This ensures the enrolled_students column matches the actual enrollments
+    courseService.syncEnrollmentCounts();
 };
 
 export const clearStudents = (): void => {

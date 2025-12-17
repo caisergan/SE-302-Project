@@ -42,6 +42,46 @@ export const clearCourses = (): void => {
 };
 
 export const enrollStudent = (courseId: number, studentId: number): void => {
-    const stmt = db.prepare('INSERT OR IGNORE INTO enrollments (course_id, student_id) VALUES (?, ?)');
-    stmt.run(courseId, studentId);
+    const insertStmt = db.prepare('INSERT OR IGNORE INTO enrollments (course_id, student_id) VALUES (?, ?)');
+    const result = insertStmt.run(courseId, studentId);
+
+    // Update enrolled_students count if a new enrollment was actually inserted
+    if (result.changes > 0) {
+        db.prepare('UPDATE courses SET enrolled_students = enrolled_students + 1 WHERE id = ?')
+            .run(courseId);
+    }
+};
+
+/**
+ * Sync enrolled_students counts with actual enrollments in the database.
+ * Useful for fixing data integrity issues or after bulk imports.
+ */
+export const syncEnrollmentCounts = (): void => {
+    db.prepare(`
+        UPDATE courses 
+        SET enrolled_students = (
+            SELECT COUNT(*) 
+            FROM enrollments 
+            WHERE enrollments.course_id = courses.id
+        )
+    `).run();
+};
+
+/**
+ * Get only courses that have enrolled students.
+ * Useful for reducing the problem size when scheduling exams.
+ */
+export const getActiveCoursesOnly = (): CourseDB[] => {
+    const stmt = db.prepare(`
+        SELECT 
+            c.id, 
+            c.code, 
+            c.name, 
+            COUNT(e.student_id) as enrolled_students 
+        FROM courses c 
+        INNER JOIN enrollments e ON c.id = e.course_id 
+        GROUP BY c.id
+        HAVING COUNT(e.student_id) > 0
+    `);
+    return stmt.all() as CourseDB[];
 };

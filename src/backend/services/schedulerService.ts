@@ -110,6 +110,7 @@ function toLocalISOString(date: Date): string {
 
 /**
  * Generates all available time slots based on the given constraints.
+ * The break between slots is determined by minHoursBetweenExams (defaults to 1 hour).
  */
 function generateTimeSlots(constraints: GenerationConstraints): TimeSlot[] {
     const slots: TimeSlot[] = [];
@@ -120,6 +121,9 @@ function generateTimeSlots(constraints: GenerationConstraints): TimeSlot[] {
     // Parse daily time boundaries
     const [startHour, startMinute] = constraints.dailyStartTime.split(':').map(Number);
     const [endHour, endMinute] = constraints.dailyEndTime.split(':').map(Number);
+
+    // Use the user's minHoursBetweenExams as the break between slots (minimum 1 hour for logistics)
+    const breakBetweenSlots = Math.max(1, constraints.minHoursBetweenExams ?? 1);
 
     let dayIndex = 0;
     const currentDate = new Date(startDate);
@@ -156,8 +160,8 @@ function generateTimeSlots(constraints: GenerationConstraints): TimeSlot[] {
                 slotIndex
             });
 
-            // Move to next slot (exam duration + break)
-            currentHour += EXAM_DURATION_HOURS + BREAK_BETWEEN_EXAMS_HOURS;
+            // Move to next slot (exam duration + user-defined break)
+            currentHour += EXAM_DURATION_HOURS + breakBetweenSlots;
             slotIndex++;
         }
 
