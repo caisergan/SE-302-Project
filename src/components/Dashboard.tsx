@@ -20,8 +20,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const { t } = useTranslation();
 
   const statsData = [
-    { name: t('dashboard.activeCourses'), count: courses.length, fill: '#6366f1' },
-    { name: t('dashboard.classrooms'), count: classrooms.length, fill: '#8b5cf6' },
+    { name: t('dashboard.activeCourses'), count: courses.length, fill: '#1B84FF' },
+    { name: t('dashboard.classrooms'), count: classrooms.length, fill: '#1570DB' },
     { name: t('dashboard.totalStudents'), count: students.length, fill: '#ec4899' },
   ];
 
@@ -59,7 +59,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
           <div className="text-slate-500 text-sm font-medium">{t('dashboard.totalCourses')}</div>
-          <div className="text-3xl font-bold text-indigo-600 mt-1">{courses.length}</div>
+          <div className="text-3xl font-bold text-ieu-500 mt-1">{courses.length}</div>
         </div>
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
           <div className="text-slate-500 text-sm font-medium">{t('dashboard.totalStudents')}</div>
@@ -80,17 +80,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       {/* Generator Section */}
-      <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-8 text-white shadow-lg flex items-center justify-between">
+      <div className="bg-gradient-to-r from-ieu-500 to-ieu-600 rounded-xl p-8 text-white shadow-lg flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold mb-2">{t('dashboard.generateExamSchedule')}</h2>
-          <p className="text-indigo-100 max-w-xl">
+          <p className="text-ieu-100 max-w-xl">
             {t('dashboard.generateDescription')}
           </p>
         </div>
         <button
           onClick={onGenerate}
           disabled={isGenerating}
-          className={`${isGenerating ? 'bg-indigo-200 cursor-wait' : 'bg-white hover:bg-indigo-50 transform hover:scale-105'} text-indigo-600 px-6 py-3 rounded-lg font-bold shadow-md transition-all flex items-center gap-2`}
+          className={`${isGenerating ? 'bg-ieu-200 cursor-wait' : 'bg-white hover:bg-ieu-50 transform hover:scale-105'} text-ieu-500 px-6 py-3 rounded-lg font-bold shadow-md transition-all flex items-center gap-2`}
         >
           {isGenerating ? (
             <>
@@ -119,7 +119,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <XAxis dataKey="name" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
               <YAxis tickLine={false} axisLine={false} />
               <Tooltip cursor={{ fill: '#f1f5f9' }} />
-              <Bar dataKey="capacity" fill="#6366f1" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="capacity" fill="#1B84FF" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -139,7 +139,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 label
               >
                 {courses.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={['#6366f1', '#8b5cf6', '#ec4899', '#14b8a6'][index % 4]} />
+                  <Cell key={`cell-${index}`} fill={['#1B84FF', '#1570DB', '#0F5CB7', '#FF7000'][index % 4]} />
                 ))}
               </Pie>
               <Tooltip />

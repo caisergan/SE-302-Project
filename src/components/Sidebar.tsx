@@ -28,7 +28,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
     <div className="w-64 bg-slate-900 text-white h-full flex flex-col shadow-xl">
       <div className="p-6 border-b border-slate-700">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center font-bold text-xl">S</div>
+          <div className="w-8 h-8 bg-ieu-500 rounded-lg flex items-center justify-center font-bold text-xl">S</div>
           <span className="text-lg font-bold tracking-tight">SchedulR</span>
         </div>
       </div>
@@ -40,7 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
             onClick={() => onViewChange(item.mode)}
             className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors duration-200
               ${currentView === item.mode
-                ? 'bg-indigo-600 text-white shadow-md'
+                ? 'bg-ieu-500 text-white shadow-md'
                 : 'text-slate-400 hover:bg-slate-800 hover:text-white'
               }`}
           >
@@ -55,7 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
           onClick={() => onViewChange(ViewMode.SETTINGS)}
           className={`w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold border border-slate-700 rounded transition
             ${currentView === ViewMode.SETTINGS
-              ? 'bg-indigo-600 text-white border-indigo-600'
+              ? 'bg-ieu-500 text-white border-ieu-500'
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
         >

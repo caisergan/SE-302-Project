@@ -89,9 +89,9 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, currentVi
                         <p className="text-slate-600">
                             {t('help.welcomeDesc') || 'This application helps you schedule university exams automatically while respecting constraints like room capacity and student conflicts.'}
                         </p>
-                        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                            <h4 className="font-semibold text-indigo-800 mb-2">{t('help.quickStart') || 'Quick Start Guide'}</h4>
-                            <ol className="list-decimal list-inside text-sm text-indigo-700 space-y-1">
+                        <div className="bg-ieu-50 border border-ieu-200 rounded-lg p-4">
+                            <h4 className="font-semibold text-ieu-700 mb-2">{t('help.quickStart') || 'Quick Start Guide'}</h4>
+                            <ol className="list-decimal list-inside text-sm text-ieu-600 space-y-1">
                                 <li>{t('help.step1') || 'Import your course and classroom data'}</li>
                                 <li>{t('help.step2') || 'Import student enrollment lists'}</li>
                                 <li>{t('help.step3') || 'Click "Run Generator" on the Dashboard'}</li>
@@ -152,10 +152,10 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, currentVi
                             </ul>
                         </div>
 
-                        <HelpImage 
-                            src={t('help.generateImage')} 
-                            alt="Generate Schedule Interface" 
-                            className="w-full h-64" 
+                        <HelpImage
+                            src={t('help.generateImage')}
+                            alt="Generate Schedule Interface"
+                            className="w-full h-64"
                         />
 
                         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -216,7 +216,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, currentVi
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[80vh] flex overflow-hidden">
                 <div className="w-56 bg-slate-100 border-r border-slate-200 p-4 flex flex-col">
                     <div className="flex items-center gap-2 mb-6">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-ieu-500">
                             <circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" />
                         </svg>
                         <h2 className="text-lg font-bold text-slate-800">{t('help.title') || 'Help'}</h2>
@@ -227,7 +227,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, currentVi
                                 key={section.id}
                                 onClick={() => setActiveSection(section.id)}
                                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeSection === section.id
-                                    ? 'bg-indigo-600 text-white'
+                                    ? 'bg-ieu-500 text-white'
                                     : 'text-slate-600 hover:bg-slate-200'
                                     }`}
                             >

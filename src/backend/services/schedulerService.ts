@@ -443,10 +443,11 @@ export function generateSchedule(
     }
 
     // Convert assignments to ExamSessions
+    // Use classroom.name as the classroomId since app.tsx maps classroom id to name
     const schedule: ExamSession[] = context.assignments.map((a, idx) => ({
         id: `exam_${idx + 1}`,
         courseId: a.course.id,
-        classroomId: a.classroom.id,
+        classroomId: a.classroom.name,
         startTime: a.timeSlot.startTime,
         endTime: a.timeSlot.endTime
     }));

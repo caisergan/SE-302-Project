@@ -73,11 +73,11 @@ const EditModal: React.FC<EditModalProps> = ({ item, type, mode, onClose, onSave
                         <>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('dataInput.courseCode')}</label>
-                                <input type="text" name="code" value={formData.code} onChange={handleChange} className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                                <input type="text" name="code" value={formData.code} onChange={handleChange} className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-ieu-500 outline-none" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('dataInput.courseName')}</label>
-                                <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                                <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-ieu-500 outline-none" />
                             </div>
 
                             <div>
@@ -96,11 +96,11 @@ const EditModal: React.FC<EditModalProps> = ({ item, type, mode, onClose, onSave
                         <>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('dataInput.roomName')}</label>
-                                <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                                <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-ieu-500 outline-none" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('dataInput.building')}</label>
-                                <input type="text" name="building" value={formData.building} onChange={handleChange} className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                                <input type="text" name="building" value={formData.building} onChange={handleChange} className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-ieu-500 outline-none" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('dataInput.capacity')}</label>
@@ -109,7 +109,7 @@ const EditModal: React.FC<EditModalProps> = ({ item, type, mode, onClose, onSave
                                     name="capacity"
                                     value={formData.capacity}
                                     onChange={handleChange}
-                                    className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-ieu-500 outline-none"
                                 />
                             </div>
 
@@ -118,7 +118,7 @@ const EditModal: React.FC<EditModalProps> = ({ item, type, mode, onClose, onSave
 
                     <div className="pt-4 flex gap-3 justify-end">
                         <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">{t('common.cancel')}</button>
-                        <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm">{mode === 'add' ? t('common.save') : t('common.save')}</button>
+                        <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-ieu-500 rounded-lg hover:bg-ieu-600 shadow-sm">{mode === 'add' ? t('common.save') : t('common.save')}</button>
                     </div>
                 </form>
             </div>
@@ -168,11 +168,11 @@ const StudentImportModal: React.FC<StudentImportModalProps> = ({
 
                     {/* Student Info Card */}
                     <div
-                        className={`border rounded-lg p-4 cursor-pointer transition-all group ${studentInfoStatus ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50'}`}
+                        className={`border rounded-lg p-4 cursor-pointer transition-all group ${studentInfoStatus ? 'border-ieu-500 bg-ieu-50' : 'border-slate-200 hover:border-ieu-300 hover:bg-ieu-50/50'}`}
                         onClick={onSelectStudentInfo}
                     >
                         <div className="flex items-start gap-4">
-                            <div className={`p-3 rounded-lg transition-colors ${studentInfoStatus ? 'bg-indigo-200 text-indigo-700' : 'bg-indigo-100 text-indigo-600 group-hover:bg-indigo-200'}`}>
+                            <div className={`p-3 rounded-lg transition-colors ${studentInfoStatus ? 'bg-ieu-200 text-ieu-600' : 'bg-ieu-100 text-ieu-500 group-hover:bg-ieu-200'}`}>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                                     <circle cx="9" cy="7" r="4" />
@@ -186,12 +186,12 @@ const StudentImportModal: React.FC<StudentImportModalProps> = ({
                                 </h4>
                                 <p className="text-sm text-slate-500">
                                     {studentInfoStatus
-                                        ? <span>{studentInfoStatus.fileName} <br /><span className="font-medium text-indigo-700">{studentInfoStatus.count} records found</span></span>
+                                        ? <span>{studentInfoStatus.fileName} <br /><span className="font-medium text-ieu-600">{studentInfoStatus.count} records found</span></span>
                                         : (t('dataInput.importStudentInfoDesc') || 'Import a file containing student IDs and names (e.g., realData_AllStudents.csv)')
                                     }
                                 </p>
                             </div>
-                            <div className={`transition-colors ${studentInfoStatus ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-500'}`}>
+                            <div className={`transition-colors ${studentInfoStatus ? 'text-ieu-500' : 'text-slate-400 group-hover:text-ieu-500'}`}>
                                 {studentInfoStatus ? (
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                                 ) : (
@@ -240,7 +240,7 @@ const StudentImportModal: React.FC<StudentImportModalProps> = ({
                 <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
                     <button
                         onClick={onSave}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm transition-colors"
+                        className="px-4 py-2 bg-ieu-500 text-white rounded-lg hover:bg-ieu-600 font-medium text-sm transition-colors"
                     >
                         {t('common.done') || 'Done'}
                     </button>
@@ -757,14 +757,14 @@ export const DataInput: React.FC<DataInputProps> = ({
         return (
             <span className="ml-1 inline-flex flex-col">
                 <svg
-                    className={`w-3 h-3 -mb-1 ${isAsc ? 'text-indigo-600' : 'text-slate-300'}`}
+                    className={`w-3 h-3 -mb-1 ${isAsc ? 'text-ieu-500' : 'text-slate-300'}`}
                     viewBox="0 0 24 24"
                     fill="currentColor"
                 >
                     <path d="M7 14l5-5 5 5z" />
                 </svg>
                 <svg
-                    className={`w-3 h-3 ${isDesc ? 'text-indigo-600' : 'text-slate-300'}`}
+                    className={`w-3 h-3 ${isDesc ? 'text-ieu-500' : 'text-slate-300'}`}
                     viewBox="0 0 24 24"
                     fill="currentColor"
                 >
@@ -850,7 +850,7 @@ export const DataInput: React.FC<DataInputProps> = ({
                                     <td className="px-6 py-4">{c.name}</td>
 
                                     <td className="px-6 py-4">{c.enrolledStudents}</td>
-                                    <td className="px-6 py-4 text-indigo-600 hover:underline cursor-pointer"
+                                    <td className="px-6 py-4 text-ieu-500 hover:underline cursor-pointer"
                                         onClick={() => handleEditClick(c)}
                                     >
                                         {t('common.edit')}
@@ -896,7 +896,7 @@ export const DataInput: React.FC<DataInputProps> = ({
                                     <td className="px-6 py-4 font-medium text-slate-900">{r.name}</td>
                                     <td className="px-6 py-4">{r.building}</td>
                                     <td className="px-6 py-4">{r.capacity}</td>
-                                    <td className="px-6 py-4 text-indigo-600 hover:underline cursor-pointer"
+                                    <td className="px-6 py-4 text-ieu-500 hover:underline cursor-pointer"
                                         onClick={() => handleEditClick(r)}
 
                                     >
@@ -948,7 +948,7 @@ export const DataInput: React.FC<DataInputProps> = ({
                                             {s.enrolledCourses.length > 0 ? (
                                                 <div className="flex flex-wrap gap-1">
                                                     {s.enrolledCourses.slice(0, 3).map(c => (
-                                                        <span key={c} className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs border border-indigo-100">
+                                                        <span key={c} className="bg-ieu-50 text-ieu-600 px-2 py-0.5 rounded text-xs border border-ieu-100">
                                                             {c}
                                                         </span>
                                                     ))}
@@ -1050,7 +1050,7 @@ export const DataInput: React.FC<DataInputProps> = ({
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder={t('dataInput.searchPlaceholder', { tab: t(`dataInput.${activeTab}`) })}
-                            className="w-full pl-10 pr-10 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                            className="w-full pl-10 pr-10 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-ieu-500 focus:border-transparent outline-none transition-all"
                         />
                         {searchQuery && (
                             <button
@@ -1101,7 +1101,7 @@ export const DataInput: React.FC<DataInputProps> = ({
                         disabled={activeTab === 'students'}
                         className={`flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg shadow-sm transition-colors ${activeTab === 'students'
                             ? 'bg-slate-300 cursor-not-allowed'
-                            : 'bg-indigo-600 hover:bg-indigo-700'
+                            : 'bg-ieu-500 hover:bg-ieu-600'
                             }`}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="5" y2="19" /><line x1="5" x2="19" y1="12" y2="12" /></svg>
@@ -1116,7 +1116,7 @@ export const DataInput: React.FC<DataInputProps> = ({
                         key={tab}
                         onClick={() => setActiveTab(tab)}
                         className={`px-6 py-3 text-sm font-medium capitalize focus:outline-none ${activeTab === tab
-                            ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50'
+                            ? 'text-ieu-500 border-b-2 border-ieu-500 bg-ieu-50/50'
                             : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                             }`}
                     >

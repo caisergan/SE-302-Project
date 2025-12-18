@@ -1,1 +1,20 @@
 @import "tailwindcss";
+
+@theme {
+  /* IEU Primary Blue Palette */
+  --color-ieu-50: #EBF5FF;
+  --color-ieu-100: #D6EBFF;
+  --color-ieu-200: #A8D4FF;
+  --color-ieu-300: #70B8FF;
+  --color-ieu-400: #3D9CFF;
+  --color-ieu-500: #1B84FF;
+  --color-ieu-600: #1570DB;
+  --color-ieu-700: #0F5CB7;
+  --color-ieu-800: #0A4993;
+  --color-ieu-900: #063570;
+  
+  /* IEU Orange Accent */
+  --color-accent-400: #FF8C33;
+  --color-accent-500: #FF7000;
+  --color-accent-600: #E66300;
+}

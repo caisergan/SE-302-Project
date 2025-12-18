@@ -195,7 +195,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
                 key={m}
                 onClick={() => setFilterMode(m)}
                 className={`px-4 py-2 text-sm font-medium capitalize transition-colors whitespace-nowrap ${filterMode === m
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-ieu-500 text-white'
                   : 'text-slate-600 hover:bg-slate-50'
                   }`}
               >
@@ -209,7 +209,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
               <select
                 value={selectedEntityId}
                 onChange={(e) => setSelectedEntityId(e.target.value)}
-                className="w-full appearance-none bg-white border border-slate-300 text-slate-700 py-2 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm truncate"
+                className="w-full appearance-none bg-white border border-slate-300 text-slate-700 py-2 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-ieu-500 focus:border-transparent shadow-sm truncate"
               >
                 {filterMode === 'room' && classrooms.map(r => (
                   <option key={r.id} value={r.id}>{r.name} ({t('schedule.capacityShort', { capacity: r.capacity })})</option>
@@ -293,7 +293,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
                 <div className="text-xs font-bold uppercase text-slate-500 mb-1">
                   {day.toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US', { weekday: 'short' })}
                 </div>
-                <div className={`text-sm font-bold w-8 h-8 mx-auto flex items-center justify-center rounded-full ${day.toDateString() === new Date().toDateString() ? 'bg-indigo-600 text-white' : 'text-slate-800'
+                <div className={`text-sm font-bold w-8 h-8 mx-auto flex items-center justify-center rounded-full ${day.toDateString() === new Date().toDateString() ? 'bg-ieu-500 text-white' : 'text-slate-800'
                   }`}>
                   {day.getDate()}
                 </div>
@@ -385,20 +385,20 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
                           ) : (
                             /* Single exam - show details directly */
                             <>
-                              <div className="text-xs font-bold text-indigo-900 truncate">
+                              <div className="text-xs font-bold text-ieu-800 truncate">
                                 {course?.code}
                               </div>
-                              <div className="text-[10px] text-indigo-700 font-medium truncate leading-tight">
+                              <div className="text-[10px] text-ieu-600 font-medium truncate leading-tight">
                                 {course?.name}
                               </div>
                               {filterMode !== 'room' && (
-                                <div className="mt-auto pt-1 text-[10px] text-indigo-500 flex items-center gap-1 truncate">
+                                <div className="mt-auto pt-1 text-[10px] text-ieu-500 flex items-center gap-1 truncate">
                                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
                                   {room?.name}
                                 </div>
                               )}
                               {filterMode === 'room' && (
-                                <div className="mt-auto pt-1 text-[10px] text-indigo-500 flex items-center gap-1 truncate">
+                                <div className="mt-auto pt-1 text-[10px] text-ieu-500 flex items-center gap-1 truncate">
                                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
                                   {course?.enrolledStudents}
                                 </div>

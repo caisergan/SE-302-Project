@@ -42,7 +42,7 @@ export const TimeSlotDetailModal: React.FC<TimeSlotDetailModalProps> = ({
 
     // Color palette for different classrooms
     const classroomColors = [
-        { bg: 'bg-indigo-50', border: 'border-indigo-400', text: 'text-indigo-700' },
+        { bg: 'bg-ieu-50', border: 'border-ieu-400', text: 'text-ieu-600' },
         { bg: 'bg-emerald-50', border: 'border-emerald-400', text: 'text-emerald-700' },
         { bg: 'bg-amber-50', border: 'border-amber-400', text: 'text-amber-700' },
         { bg: 'bg-rose-50', border: 'border-rose-400', text: 'text-rose-700' },
@@ -70,16 +70,16 @@ export const TimeSlotDetailModal: React.FC<TimeSlotDetailModalProps> = ({
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-indigo-600 to-indigo-700">
+                <div className="px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-ieu-500 to-ieu-600">
                     <div className="flex justify-between items-start">
                         <div>
                             <h2 className="text-lg font-bold text-white">
                                 {t('schedule.timeSlotDetails')}
                             </h2>
-                            <p className="text-indigo-100 text-sm mt-1">
+                            <p className="text-ieu-100 text-sm mt-1">
                                 {formatDate(timeSlot.start)}
                             </p>
-                            <p className="text-indigo-200 text-sm">
+                            <p className="text-ieu-200 text-sm">
                                 {formatTime(timeSlot.start)} - {formatTime(timeSlot.end)}
                             </p>
                         </div>
@@ -166,7 +166,7 @@ export const TimeSlotDetailModal: React.FC<TimeSlotDetailModalProps> = ({
                 <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-end">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                        className="px-4 py-2 bg-ieu-500 text-white rounded-lg hover:bg-ieu-600 transition-colors font-medium"
                     >
                         {t('common.cancel')}
                     </button>
