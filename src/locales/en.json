@@ -98,7 +98,9 @@
         "importStudentInfoDesc": "Import a file containing student IDs and names (e.g., sampleData_AllStudents.csv)",
         "importAttendance": "Attendance Data",
         "importAttendanceDesc": "Import a file containing course-student enrollments (e.g., sampleData_AllAttendanceLists.csv)",
-        "importedStudents": "Imported {{count}} students."
+        "importedStudents": "Imported {{count}} students.",
+        "searchPlaceholder": "Search {{tab}}...",
+        "noSearchResults": "No results found for \"{{query}}\""
     },
     "schedule": {
         "title": "Schedule View",

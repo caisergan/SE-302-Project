@@ -256,6 +256,8 @@ export const DataInput: React.FC<DataInputProps> = ({
     const { t } = useTranslation();
     const { showNotification } = useNotification();
     const [activeTab, setActiveTab] = useState<Tab>('courses');
+    const [searchQuery, setSearchQuery] = useState<string>('');
+    const [sortConfig, setSortConfig] = useState<{ column: string; direction: 'asc' | 'desc' } | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const studentInfoFileInputRef = useRef<HTMLInputElement>(null);
     const attendanceFileInputRef = useRef<HTMLInputElement>(null);
@@ -726,7 +728,100 @@ export const DataInput: React.FC<DataInputProps> = ({
         e.target.value = '';
     };
 
+    // Clear search and sort when switching tabs
+    React.useEffect(() => {
+        setSearchQuery('');
+        setSortConfig(null);
+    }, [activeTab]);
+
+    // Toggle sort for a column
+    const toggleSort = (column: string) => {
+        setSortConfig(prev => {
+            if (prev?.column === column) {
+                // Toggle direction or clear if already desc
+                if (prev.direction === 'asc') {
+                    return { column, direction: 'desc' };
+                }
+                return null; // Clear sort
+            }
+            return { column, direction: 'asc' };
+        });
+    };
+
+    // Sort icon component
+    const SortIcon = ({ column }: { column: string }) => {
+        const isActive = sortConfig?.column === column;
+        const isAsc = isActive && sortConfig?.direction === 'asc';
+        const isDesc = isActive && sortConfig?.direction === 'desc';
+
+        return (
+            <span className="ml-1 inline-flex flex-col">
+                <svg
+                    className={`w-3 h-3 -mb-1 ${isAsc ? 'text-indigo-600' : 'text-slate-300'}`}
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                >
+                    <path d="M7 14l5-5 5 5z" />
+                </svg>
+                <svg
+                    className={`w-3 h-3 ${isDesc ? 'text-indigo-600' : 'text-slate-300'}`}
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                >
+                    <path d="M7 10l5 5 5-5z" />
+                </svg>
+            </span>
+        );
+    };
+
+    // Get filtered and sorted data
+    const getFilteredData = () => {
+        const query = searchQuery.toLowerCase().trim();
+
+        // Filter
+        let filteredCourses = query
+            ? courses.filter(c =>
+                c.code.toLowerCase().includes(query) ||
+                c.name.toLowerCase().includes(query)
+            )
+            : [...courses];
+
+        let filteredClassrooms = query
+            ? classrooms.filter(r =>
+                r.name.toLowerCase().includes(query) ||
+                r.building.toLowerCase().includes(query)
+            )
+            : [...classrooms];
+
+        let filteredStudents = query
+            ? students.filter(s =>
+                s.id.toLowerCase().includes(query) ||
+                s.name.toLowerCase().includes(query) ||
+                s.enrolledCourses.some(c => c.toLowerCase().includes(query))
+            )
+            : [...students];
+
+        // Sort
+        if (sortConfig) {
+            const { column, direction } = sortConfig;
+            const multiplier = direction === 'asc' ? 1 : -1;
+
+            if (column === 'enrolledStudents') {
+                filteredCourses.sort((a, b) => (a.enrolledStudents - b.enrolledStudents) * multiplier);
+            } else if (column === 'capacity') {
+                filteredClassrooms.sort((a, b) => (a.capacity - b.capacity) * multiplier);
+            } else if (column === 'studentId') {
+                filteredStudents.sort((a, b) => a.id.localeCompare(b.id) * multiplier);
+            }
+        }
+
+        return { filteredCourses, filteredClassrooms, filteredStudents };
+    };
+
     const renderTable = () => {
+        const { filteredCourses, filteredClassrooms, filteredStudents } = getFilteredData();
+        const hasSearchQuery = searchQuery.trim().length > 0;
+
         if (activeTab === 'courses') {
             return (
                 <div className="overflow-auto flex-1 w-full">
@@ -736,12 +831,20 @@ export const DataInput: React.FC<DataInputProps> = ({
                                 <th className="px-6 py-3 bg-slate-50">{t('dataInput.courseCode')}</th>
                                 <th className="px-6 py-3 bg-slate-50">{t('dataInput.courseName')}</th>
 
-                                <th className="px-6 py-3 bg-slate-50">{t('dataInput.enrolledStudents')}</th>
+                                <th
+                                    className="px-6 py-3 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors select-none"
+                                    onClick={() => toggleSort('enrolledStudents')}
+                                >
+                                    <span className="flex items-center">
+                                        {t('dataInput.enrolledStudents')}
+                                        <SortIcon column="enrolledStudents" />
+                                    </span>
+                                </th>
                                 <th className="px-6 py-3 bg-slate-50">{t('common.actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {courses.map((c) => (
+                            {filteredCourses.map((c) => (
                                 <tr key={c.id} className="bg-white border-b hover:bg-slate-50">
                                     <td className="px-6 py-4 font-medium text-slate-900">{c.code}</td>
                                     <td className="px-6 py-4">{c.name}</td>
@@ -754,7 +857,13 @@ export const DataInput: React.FC<DataInputProps> = ({
                                     </td>
                                 </tr>
                             ))}
-                            {courses.length === 0 && (<tr><td colSpan={5} className="px-6 py-8 text-center text-slate-400">{t('dataInput.noCourses')}</td></tr>)}
+                            {filteredCourses.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
+                                        {hasSearchQuery ? t('dataInput.noSearchResults', { query: searchQuery }) : t('dataInput.noCourses')}
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -768,13 +877,21 @@ export const DataInput: React.FC<DataInputProps> = ({
                             <tr>
                                 <th className="px-6 py-3 bg-slate-50">{t('dataInput.roomName')}</th>
                                 <th className="px-6 py-3 bg-slate-50">{t('dataInput.building')}</th>
-                                <th className="px-6 py-3 bg-slate-50">{t('dataInput.capacity')}</th>
+                                <th
+                                    className="px-6 py-3 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors select-none"
+                                    onClick={() => toggleSort('capacity')}
+                                >
+                                    <span className="flex items-center">
+                                        {t('dataInput.capacity')}
+                                        <SortIcon column="capacity" />
+                                    </span>
+                                </th>
 
                                 <th className="px-6 py-3 bg-slate-50">{t('common.actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {classrooms.map((r) => (
+                            {filteredClassrooms.map((r) => (
                                 <tr key={r.id} className="bg-white border-b hover:bg-slate-50">
                                     <td className="px-6 py-4 font-medium text-slate-900">{r.name}</td>
                                     <td className="px-6 py-4">{r.building}</td>
@@ -787,8 +904,12 @@ export const DataInput: React.FC<DataInputProps> = ({
                                     </td>
                                 </tr>
                             ))}
-                            {classrooms.length === 0 && (
-                                <tr><td colSpan={5} className="px-6 py-8 text-center text-slate-400">{t('dataInput.noClassrooms')}</td></tr>
+                            {filteredClassrooms.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
+                                        {hasSearchQuery ? t('dataInput.noSearchResults', { query: searchQuery }) : t('dataInput.noClassrooms')}
+                                    </td>
+                                </tr>
                             )}
                         </tbody>
                     </table>
@@ -796,14 +917,22 @@ export const DataInput: React.FC<DataInputProps> = ({
             );
         }
         if (activeTab === 'students') {
-            const displayStudents = students.slice(0, 100);
+            const displayStudents = filteredStudents.slice(0, 100);
             return (
                 <div className="flex flex-col h-full">
                     <div className="overflow-auto flex-1 w-full">
                         <table className="w-full text-sm text-left text-slate-600">
                             <thead className="text-xs text-slate-700 uppercase bg-slate-50 border-b border-slate-200 sticky top-0 z-10 shadow-sm">
                                 <tr>
-                                    <th className="px-6 py-3 bg-slate-50">{t('dataInput.studentId')}</th>
+                                    <th
+                                        className="px-6 py-3 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors select-none"
+                                        onClick={() => toggleSort('studentId')}
+                                    >
+                                        <span className="flex items-center">
+                                            {t('dataInput.studentId')}
+                                            <SortIcon column="studentId" />
+                                        </span>
+                                    </th>
                                     <th className="px-6 py-3 bg-slate-50">{t('dataInput.studentNameGenerated')}</th>
                                     <th className="px-6 py-3 bg-slate-50">{t('dataInput.email')}</th>
                                     <th className="px-6 py-3 bg-slate-50">{t('dataInput.enrolledCourses')}</th>
@@ -833,15 +962,19 @@ export const DataInput: React.FC<DataInputProps> = ({
                                         </td>
                                     </tr>
                                 ))}
-                                {students.length === 0 && (
-                                    <tr><td colSpan={4} className="px-6 py-8 text-center text-slate-400">{t('dataInput.noStudents')}</td></tr>
+                                {filteredStudents.length === 0 && (
+                                    <tr>
+                                        <td colSpan={4} className="px-6 py-8 text-center text-slate-400">
+                                            {hasSearchQuery ? t('dataInput.noSearchResults', { query: searchQuery }) : t('dataInput.noStudents')}
+                                        </td>
+                                    </tr>
                                 )}
                             </tbody>
                         </table>
                     </div>
-                    {students.length > 100 && (
+                    {filteredStudents.length > 100 && (
                         <div className="p-2 bg-slate-50 border-t border-slate-200 text-xs text-center text-slate-500 shrink-0">
-                            {t('dataInput.showingStudents', { count: students.length })}
+                            {t('dataInput.showingStudents', { count: filteredStudents.length })}
                         </div>
                     )}
                 </div>
@@ -902,6 +1035,37 @@ export const DataInput: React.FC<DataInputProps> = ({
                     <h2 className="text-lg font-bold text-slate-800">{t('common.dataManagement')}</h2>
                     <p className="text-sm text-slate-500">{t('dataInput.dataManagementDescription')}</p>
                 </div>
+
+                {/* Search Input */}
+                <div className="flex-1 max-w-md mx-6">
+                    <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
+                                <circle cx="11" cy="11" r="8" />
+                                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                            </svg>
+                        </div>
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder={t('dataInput.searchPlaceholder', { tab: t(`dataInput.${activeTab}`) })}
+                            className="w-full pl-10 pr-10 py-2 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                            </button>
+                        )}
+                    </div>
+                </div>
+
                 <div className="flex gap-2">
                     <div className="relative">
                         <button
