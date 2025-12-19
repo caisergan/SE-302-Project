@@ -783,6 +783,20 @@ export function generateSchedule(
         };
     }
 
+    // Diagnostic: Show time slot analysis
+    const uniqueDays = new Set(timeSlots.map(t => t.dayIndex)).size;
+    const slotsPerDay = timeSlots.length / uniqueDays;
+    const maxParallelCapacity = timeSlots.length * classrooms.length;
+    console.log('========== SCHEDULING CAPACITY ANALYSIS ==========');
+    console.log(`📅 Days: ${uniqueDays}`);
+    console.log(`⏰ Slots per day: ${slotsPerDay}`);
+    console.log(`🏫 Total time slots: ${timeSlots.length}`);
+    console.log(`🚪 Classrooms: ${classrooms.length}`);
+    console.log(`📚 Courses to schedule: ${courses.length}`);
+    console.log(`📊 Max theoretical capacity: ${maxParallelCapacity} (${timeSlots.length} slots × ${classrooms.length} rooms)`);
+    console.log(`✅ Feasibility: ${maxParallelCapacity >= courses.length ? 'POSSIBLE' : 'IMPOSSIBLE - need more slots or rooms'}`);
+    console.log('==================================================');
+
     // Sort courses by difficulty (Degree Heuristic)
     const sortedCourses = sortCoursesByDifficulty(courses);
 
@@ -790,12 +804,36 @@ export function generateSchedule(
     const courseStudentMap = buildCourseStudentMap(students);
     const studentCourseMap = buildStudentCourseMap(students);
 
+    // Diagnostic: Analyze student conflicts to estimate actual capacity needed
+    let maxCoursesPerStudent = 0;
+    let studentsWithMultipleCourses = 0;
+    studentCourseMap.forEach((courseIds) => {
+        if (courseIds.length > 1) studentsWithMultipleCourses++;
+        maxCoursesPerStudent = Math.max(maxCoursesPerStudent, courseIds.length);
+    });
+
+    // With maxExamsPerDay constraint, a student with N courses needs at least ceil(N / maxExamsPerDay) days
+    const maxExamsPerDay = constraints.maxExamsPerDay ?? 2;
+    const minDaysNeeded = Math.ceil(maxCoursesPerStudent / maxExamsPerDay);
+    const minSlotsNeeded = maxCoursesPerStudent; // Each course for that student needs a different slot
+
+    console.log('========== STUDENT CONFLICT ANALYSIS ==========');
+    console.log(`👥 Students with 2+ courses: ${studentsWithMultipleCourses}`);
+    console.log(`📚 Max courses per student: ${maxCoursesPerStudent}`);
+    console.log(`📅 Max exams per day allowed: ${maxExamsPerDay}`);
+    console.log(`⚠️ Min days needed for busiest student: ${minDaysNeeded}`);
+    console.log(`⚠️ Min SEQUENTIAL slots needed: ${minSlotsNeeded} (can't parallelize for same student)`);
+    if (minSlotsNeeded > timeSlots.length) {
+        console.log(`❌ PROBLEM: Need ${minSlotsNeeded} sequential slots but only have ${timeSlots.length}!`);
+    }
+    console.log('================================================');
+
     // Initialize validation context with configurable constraints
     const context: ValidationContext = {
         assignments: [],
         courseStudentMap,
         studentCourseMap,
-        maxExamsPerDay: constraints.maxExamsPerDay ?? 2,
+        maxExamsPerDay,
         allowConsecutiveExams: constraints.allowConsecutiveExams ?? true,
         minHoursBetweenExams: constraints.minHoursBetweenExams ?? 1
     };
