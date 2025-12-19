@@ -10,6 +10,7 @@ interface DataInputProps {
     setClassrooms: React.Dispatch<React.SetStateAction<Classroom[]>>;
     students: Student[];
     setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
+    setSchedule: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
 type Tab = 'courses' | 'classrooms' | 'students'|'enrollments';
@@ -285,12 +286,14 @@ export const DataInput: React.FC<DataInputProps> = ({
 
         if (window.confirm(confirmMessage)) {
             if (type === 'all') {
+                // 1. Clear input data from DB
                 await window.api.clearCourses();
                 await window.api.clearClassrooms();
                 await window.api.clearStudents();
-                setCourses([]);
-                setClassrooms([]);
-                setStudents([]);
+                // 2. CLEAR THE SCHEDULE TOO (Logic addition)
+               await window.api.clearSchedule();
+               showNotification("All data and generated schedules have been wiped.", 'success');
+
             } else if (type === 'courses') {
                 await window.api.clearCourses();
                 setCourses([]);
@@ -304,22 +307,34 @@ export const DataInput: React.FC<DataInputProps> = ({
             setIsClearMenuOpen(false);
         }
     };
-   // Helper function to detect the type of the imported file based on its content
+   // Detects file type based on specific header strings or formatting
+    
+    // Helper to distinguish between standard Student lists and Attendance/Enrollment lists
+  
     const detectFileType = (text: string): string => {
-        const cleanText = text.trim();
-        if (cleanText.includes('ALL OF THE COURSES')) return 'courses';
-        if (cleanText.includes('ALL OF THE CLASSROOMS')) return 'classrooms';
-        if (cleanText.includes('ALL OF THE STUDENTS')) return 'students';
-        // Check for the specific Python-like list format: [ 'STD001', ... ]
-        if (cleanText.includes('[') && cleanText.includes(']')) return 'enrollments';
+        const upperText = text.toUpperCase();
+        
+        // Student Info files always contain this header
+        if (upperText.includes('ALL OF THE STUDENTS')) return 'students';
+        
+        // Course files header
+        if (upperText.includes('ALL OF THE COURSES')) return 'courses';
+        
+        // Classroom files header
+        if (upperText.includes('ALL OF THE CLASSROOMS')) return 'classrooms';
+        
+        // Attendance/Enrollment files contain the list format like [ 'ID1', 'ID2' ]
+        if (text.includes('[') && text.includes(']')) return 'enrollments';
+        
         return 'unknown';
     };
     
- const handleAttendanceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    
+const handleAttendanceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // CONSTRAINT: Prevent import if primary data (courses/students) is missing
+        // CONSTRAINT: Prevent import if Courses or Students tabs are empty
         if (courses.length === 0 || students.length === 0) {
             showNotification("Dependency Error: Please import Courses and Students first!", 'error');
             e.target.value = '';
@@ -330,9 +345,8 @@ export const DataInput: React.FC<DataInputProps> = ({
         reader.onload = async (event) => {
             const text = event.target?.result as string;
             
-            // VALIDATION: Check if the file content matches the Enrollment format
-            const detected = detectFileType(text);
-            if (detected !== 'enrollments') {
+            // VALIDATION: Ensure the user is uploading an actual Enrollment file
+            if (detectFileType(text) !== 'enrollments') {
                 showNotification("Format Error: This file is not a valid attendance list file!", 'error');
                 return;
             }
@@ -340,11 +354,28 @@ export const DataInput: React.FC<DataInputProps> = ({
             try {
                 const rows = text.split('\n').map(r => r.trim()).filter(r => r.length > 0);
                 const map = extractAttendanceMap(rows);
+                
+                // Identify how many students in the file exist in our current database
+                const existingStudentIds = new Set(students.map(s => s.id.toUpperCase()));
+                let matchCount = 0;
+                let skipCount = 0;
+
                 map.forEach((val, key) => {
-                    if (!tempAttendanceMap.current.has(key)) tempAttendanceMap.current.set(key, new Set());
-                    val.forEach(c => tempAttendanceMap.current.get(key)?.add(c));
+                    if (existingStudentIds.has(key.toUpperCase())) {
+                        if (!tempAttendanceMap.current.has(key)) tempAttendanceMap.current.set(key, new Set());
+                        val.forEach(c => tempAttendanceMap.current.get(key)?.add(c));
+                        matchCount++;
+                    } else {
+                        skipCount++;
+                    }
                 });
-                setAttendanceStatus({ fileName: file.name, count: map.size });
+
+                if (matchCount > 0) {
+                    setAttendanceStatus({ fileName: file.name, count: matchCount });
+                    showNotification(`Identified ${matchCount} valid students. Ignored ${skipCount} unknown students.`, 'success');
+                } else {
+                    showNotification("Import Warning: No matching students found in the current database.", 'error');
+                }
             } catch (err) {
                 showNotification("Parse Error: Failed to analyze the attendance file.", 'error');
             }
@@ -365,6 +396,7 @@ export const DataInput: React.FC<DataInputProps> = ({
             fileInputRef.current?.click();
         }
     };
+    
 
     const handleStudentInfoImport = () => {
         // Do not close modal here anymore
@@ -649,40 +681,85 @@ export const DataInput: React.FC<DataInputProps> = ({
         }
         return 0;
     };
+    // Refreshes local state from the database to ensure UI is up to date
+    const refreshSystemData = async () => {
+        const savedStudents = await window.api.getStudents();
+        setStudents(savedStudents.map((s: any) => ({
+            id: s.student_number,
+            name: s.name,
+            email: `${s.student_number.toLowerCase()}@uni.edu`,
+            enrolledCourses: s.enrolled_courses
+        })));
 
+        const savedCourses = await window.api.getCourses();
+        setCourses(savedCourses.map((c: any) => ({
+            id: c.code,
+            code: c.code,
+            name: c.name,
+            enrolledStudents: c.enrolled_students
+        })));
+    };
+
+   // Processes the attendance file and links ONLY existing students to existing courses
+   // Processes attendance by matching file data against existing system data
     const parseStudentAttendanceFile = async (rows: string[]): Promise<number> => {
-        const map = extractAttendanceMap(rows);
-        const newStudents: any[] = [];
-        map.forEach((courses, id) => {
-            newStudents.push({
-                studentNumber: id,
-                name: `Student ${id}`,
-                enrolledCourses: Array.from(courses)
-            });
+        const rawMap = extractAttendanceMap(rows);
+        const validEnrollments: any[] = [];
+        
+        // Create lookup sets for O(1) performance
+        const existingStudentIds = new Set(students.map(s => s.id.toUpperCase()));
+        const existingCourseCodes = new Set(courses.map(c => c.code.toUpperCase()));
+
+        let totalFoundInFile = 0;
+        let matchedCount = 0;
+        let missingStudentsCount = 0;
+
+        rawMap.forEach((courseCodes, studentId) => {
+            const normalizedId = studentId.toUpperCase();
+            totalFoundInFile++;
+
+            // CHECK: Does this student exist in the Students tab?
+            if (existingStudentIds.has(normalizedId)) {
+                // Filter courses: only keep those that exist in the Courses tab
+                const validCourses = Array.from(courseCodes).filter(code => 
+                    existingCourseCodes.has(code.toUpperCase())
+                );
+
+                if (validCourses.length > 0) {
+                    validEnrollments.push({
+                        studentNumber: studentId,
+                        name: "", // Leave empty; backend won't update existing names
+                        enrolledCourses: validCourses
+                    });
+                    matchedCount++;
+                }
+            } else {
+                // Student not found in system - increment skip counter
+                missingStudentsCount++;
+            }
         });
 
-        if (newStudents.length > 0) {
-            await window.api.addStudentsBulk(newStudents);
-            // Refresh...
-            const savedStudents = await window.api.getStudents();
-            setStudents(savedStudents.map((s: any) => ({
-                id: s.student_number,
-                name: s.name,
-                email: `${s.student_number.toLowerCase()}@uni.edu`,
-                enrolledCourses: s.enrolled_courses
-            })));
-            const savedCourses = await window.api.getCourses();
-            setCourses(savedCourses.map((c: any) => ({
-                id: c.code,
-                code: c.code,
-                name: c.name,
-                enrolledStudents: c.enrolled_students
-            })));
+        // If we found at least one match, proceed with the import
+        if (validEnrollments.length > 0) {
+            await window.api.addStudentsBulk(validEnrollments);
 
-            showNotification(t('dataInput.processedAttendance', { count: newStudents.length }), 'success');
-            return newStudents.length;
+            // Notify user about the partial success and the missing students
+            if (missingStudentsCount > 0) {
+                showNotification(
+                    `Matched ${matchedCount} students. Records not found for ${missingStudentsCount} students in the list.`, 
+                    'success'
+                );
+            } else {
+                showNotification(`Successfully matched all ${matchedCount} students.`, 'success');
+            }
+
+            // Refresh UI data
+            await refreshSystemData();
+            return matchedCount;
+        } else {
+            showNotification(`Import Failed: None of the ${totalFoundInFile} students in this file exist in your system.`, 'error');
+            return 0;
         }
-        return 0;
     };
 
     const processCSV = (text: string) => {
@@ -737,6 +814,8 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         e.target.value = '';
     };
 
+   // Handles the Student Information file upload
+    // Blocks Attendance files to prevent "ghost" students
     const handleStudentInfoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -744,20 +823,36 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const reader = new FileReader();
         reader.onload = async (event) => {
             const text = event.target?.result as string;
+            
+            // VALIDATION: Check what kind of file this actually is
+            const actualType = detectFileType(text);
+
+            // SECURITY: If user tries to upload Attendance as Student Info
+            if (actualType === 'enrollments') {
+                showNotification("Format Error: You cannot upload an Attendance List as Student Information!", 'error');
+                return;
+            }
+
+            // SECURITY: Ensure it's a student list
+            if (actualType !== 'students' && actualType !== 'unknown') {
+                showNotification("Format Error: This file does not contain valid Student Information!", 'error');
+                return;
+            }
+
             try {
                 const rows = text.split('\n').map(r => r.trim()).filter(r => r.length > 0);
-                // Buffer Mode
+                // Extract students and store them in the temporary map
                 const map = extractStudentMap(rows);
                 map.forEach((val, key) => tempStudentMap.current.set(key, val));
-                const count = map.size; // Showing map.size is count from this file
-                setStudentInfoStatus({ fileName: file.name, count });
+                
+                setStudentInfoStatus({ fileName: file.name, count: map.size });
+                showNotification(`Successfully loaded ${map.size} students. Click 'Done' to save.`, 'success');
             } catch (err) {
-                console.error("Failed to parse student info file", err);
-                showNotification(t('dataInput.parseError'), 'error');
+                showNotification("Parse Error: Failed to process the student info file.", 'error');
             }
         };
         reader.readAsText(file);
-        e.target.value = '';
+        e.target.value = ''; // Reset to allow re-selection
     };
 
    

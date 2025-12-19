@@ -198,6 +198,9 @@ const App: React.FC = () => {
             courses={courses} setCourses={setCourses}
             classrooms={classrooms} setClassrooms={setClassrooms}
             students={students} setStudents={setStudents}
+            setSchedule={setSchedule}
+            
+            
           />
         );
       case ViewMode.SCHEDULE:
