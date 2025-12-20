@@ -320,8 +320,9 @@ export const DataInput: React.FC<DataInputProps> = ({
         if (!file) return;
 
         // CONSTRAINT: Prevent import if primary data (courses/students) is missing
-        if (courses.length === 0 || students.length === 0) {
-            showNotification("Dependency Error: Please import Courses and Students first!", 'error');
+        const studentsAvailable = students.length > 0 || tempStudentMap.current.size > 0;
+        if (courses.length === 0 || !studentsAvailable) {
+            showNotification("Dependency Error: Please import Courses and student information first!", 'error');
             e.target.value = '';
             return;
         }
