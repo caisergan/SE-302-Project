@@ -172,14 +172,25 @@
       "exportDesc": "Programı Excel formatında indirip paylaşabilirsiniz.",
       "csvExport": "Excel / CSV Çıktısı",
       "autoSave": "Otomatik Kayıt",
-      "autoSaveDesc": "Yaptığınız işlemler veritabanına anlık olarak kaydedilir.",
       "generateImage": "/assets/help/generate-tr.png",
       "importCoursesImage": "/assets/help/import_courses-tr.png",
       "importClassroomsImage": "/assets/help/import_classrooms-tr.png",
       "importStudentsImage": "/assets/help/import_students-tr.png",
       "importStudentsImage2": "/assets/help/student2-tr.png",
       "importAttendanceImage": "/assets/help/import_attendance-tr.png",
-      "importAttendanceImage2": "/assets/help/attendance2-tr.png"
+      "importAttendanceImage2": "/assets/help/attendance2-tr.png",
+      "allViewDesc": "Tüm sınavları haftalık takvimde, saat ve gün bazında toplu olarak görün.",
+      "roomViewDesc": "Seçilen dersliğin doluluk oranlarını ve sınavlarını listeleyin.",
+      "studentViewDesc": "Öğrenci numarası girerek o öğrencinin kişisel sınav takvimini çıkarın.",
+      "courseViewDesc": "Ders kodu aratarak o dersin sınavının nerede ve ne zaman olduğunu bulun.",
+      "viewAllImage": "/assets/help/view_all-tr.png",
+      "viewRoomImage": "/assets/help/view_room-tr.png",
+      "viewStudentImage": "/assets/help/view_student-tr.png",
+      "viewCourseImage": "/assets/help/view_course-tr.png",
+      "autoSaveDesc": "Yaptığınız her değişiklik anlık olarak veritabanına kaydedilir.",
+      "exportExcelImage": "/assets/help/export_excel-tr.png",
+      "csvExportDesc": "Programı Excel/CSV formatında indirebilirsiniz."
+      
   },
   "constraintsModal": {
         "title": "Sınav Programı Kısıtlamaları",

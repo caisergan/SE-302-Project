@@ -14,6 +14,9 @@ type HelpSection = 'overview' | 'import' | 'generate' | 'views' | 'export';
 // Import sekmesinin alt başlıkları
 type ImportTab = 'courses' | 'classrooms' | 'students' | 'attendance';
 
+// Views Alt Sekmeleri (YENİ)
+type ViewTab = 'all' | 'room' | 'student' | 'course';
+
 // --- GÖRSEL BİLEŞENİ ---
 const HelpImage = ({ src, alt }: { src: string; alt: string }) => {
     return (
@@ -35,6 +38,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, currentVi
     const { t } = useTranslation();
     const [activeSection, setActiveSection] = useState<HelpSection>('overview');
     const [activeImportTab, setActiveImportTab] = useState<ImportTab>('courses');
+    const [activeViewTab, setActiveViewTab] = useState<ViewTab>('all');
 
     // Modal açıldığında ilgili sayfayı getir
     useEffect(() => {
@@ -214,40 +218,116 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose, currentVi
                 return (
                     <div className="space-y-4 animate-fade-in">
                         <h3 className="text-xl font-bold text-slate-800">{t('help.viewsTitle')}</h3>
-                        <p className="text-slate-600">{t('help.viewsDesc')}</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div className="bg-slate-50 rounded-lg p-4">
-                                <h4 className="font-semibold text-slate-800 mb-1">{t('help.allView')}</h4>
-                                <p className="text-sm text-slate-600">{t('help.allViewDesc')}</p>
-                            </div>
-                            <div className="bg-slate-50 rounded-lg p-4">
-                                <h4 className="font-semibold text-slate-800 mb-1">{t('help.roomView')}</h4>
-                                <p className="text-sm text-slate-600">{t('help.roomViewDesc')}</p>
-                            </div>
-                            <div className="bg-slate-50 rounded-lg p-4">
-                                <h4 className="font-semibold text-slate-800 mb-1">{t('help.studentView')}</h4>
-                                <p className="text-sm text-slate-600">{t('help.studentViewDesc')}</p>
-                            </div>
-                            <div className="bg-slate-50 rounded-lg p-4">
-                                <h4 className="font-semibold text-slate-800 mb-1">{t('help.courseView')}</h4>
-                                <p className="text-sm text-slate-600">{t('help.courseViewDesc')}</p>
-                            </div>
+                        <p className="text-slate-600 mb-4">{t('help.viewsDesc')}</p>
+
+                        {/* VIEWS ALT SEKMELERİ */}
+                        <div className="flex gap-2 border-b border-slate-200 mb-4 overflow-x-auto">
+                            <button
+                                onClick={() => setActiveViewTab('all')}
+                                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                                    activeViewTab === 'all' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                                }`}
+                            >
+                                {t('help.allView')}
+                            </button>
+                            <button
+                                onClick={() => setActiveViewTab('room')}
+                                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                                    activeViewTab === 'room' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                                }`}
+                            >
+                                {t('help.roomView')}
+                            </button>
+                            <button
+                                onClick={() => setActiveViewTab('student')}
+                                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                                    activeViewTab === 'student' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                                }`}
+                            >
+                                {t('help.studentView')}
+                            </button>
+                            <button
+                                onClick={() => setActiveViewTab('course')}
+                                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                                    activeViewTab === 'course' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                                }`}
+                            >
+                                {t('help.courseView')}
+                            </button>
+                        </div>
+
+                        {/* VIEWS İÇERİK KUTUSU */}
+                        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                            {activeViewTab === 'all' && (
+                                <div className="space-y-4 animate-fade-in">
+                                    <h4 className="font-bold text-slate-800">{t('help.allView')}</h4>
+                                    <p className="text-sm text-slate-600">{t('help.allViewDesc')}</p>
+                                    <HelpImage src={t('help.viewAllImage')} alt="All Views" />
+                                </div>
+                            )}
+                            {activeViewTab === 'room' && (
+                                <div className="space-y-4 animate-fade-in">
+                                    <h4 className="font-bold text-slate-800">{t('help.roomView')}</h4>
+                                    <p className="text-sm text-slate-600">{t('help.roomViewDesc')}</p>
+                                    <HelpImage src={t('help.viewRoomImage')} alt="Room View" />
+                                </div>
+                            )}
+                            {activeViewTab === 'student' && (
+                                <div className="space-y-4 animate-fade-in">
+                                    <h4 className="font-bold text-slate-800">{t('help.studentView')}</h4>
+                                    <p className="text-sm text-slate-600">{t('help.studentViewDesc')}</p>
+                                    <HelpImage src={t('help.viewStudentImage')} alt="Student View" />
+                                </div>
+                            )}
+                            {activeViewTab === 'course' && (
+                                <div className="space-y-4 animate-fade-in">
+                                    <h4 className="font-bold text-slate-800">{t('help.courseView')}</h4>
+                                    <p className="text-sm text-slate-600">{t('help.courseViewDesc')}</p>
+                                    <HelpImage src={t('help.viewCourseImage')} alt="Course View" />
+                                </div>
+                            )}
                         </div>
                     </div>
                 );
 
             case 'export':
                 return (
-                    <div className="space-y-4 animate-fade-in">
-                        <h3 className="text-xl font-bold text-slate-800">{t('help.exportTitle')}</h3>
-                        <p className="text-slate-600">{t('help.exportDesc')}</p>
-                        <div className="bg-slate-50 rounded-lg p-4">
-                            <h4 className="font-semibold text-slate-800 mb-2">{t('help.csvExport')}</h4>
-                            <p className="text-sm text-slate-600">{t('help.csvExportDesc')}</p>
+                    <div className="space-y-6 animate-fade-in">
+                        <div>
+                            <h3 className="text-xl font-bold text-slate-800">{t('help.exportTitle')}</h3>
+                            <p className="text-slate-600 mt-2">{t('help.exportDesc')}</p>
                         </div>
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                            <h4 className="font-semibold text-green-800 mb-2">{t('help.autoSave')}</h4>
-                            <p className="text-sm text-green-700">{t('help.autoSaveDesc')}</p>
+
+                        {/* EXCEL / CSV BÖLÜMÜ */}
+                        <div className="bg-slate-50 rounded-lg p-5 border border-slate-200">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="p-2 bg-emerald-100 rounded-lg text-emerald-600">
+                                    {/* Download Icon */}
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                </div>
+                                <h4 className="font-bold text-slate-800 text-lg">{t('help.csvExport')}</h4>
+                            </div>
+                            
+                            <p className="text-sm text-slate-600 mb-4 ml-1">
+                                {t('help.csvExportDesc')}
+                            </p>
+
+                            {/* TEK GÖRSEL BURADA */}
+                            <HelpImage src={t('help.exportExcelImage')} alt="Export to Excel Interface" />
+                        </div>
+
+                        {/* OTOMATİK KAYIT BİLGİSİ (Görselsiz, sadece bilgilendirme) */}
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
+                            <div className="mt-1 text-green-600 shrink-0">
+                                {/* Save Icon */}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-green-800">{t('help.autoSave')}</h4>
+                                <p className="text-sm text-green-700 mt-1">
+                                    {t('help.autoSaveDesc')}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 );
