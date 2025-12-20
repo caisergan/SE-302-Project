@@ -630,11 +630,6 @@ function getFailureReason(
  * Recursive Backtracking Solver with SPLIT SUPPORT.
  * Tries to schedule courses by splitting them across multiple rooms if necessary.
  */
-/**
- * Recursive Backtracking Solver with SPLIT SUPPORT.
- * Tries to schedule courses by splitting them across multiple rooms if necessary.
- * Strategy: Largest-Fit (Fills largest available rooms first).
- */
 function solve(
     courses: Course[],
     classrooms: Classroom[],
@@ -644,80 +639,62 @@ function solve(
     startTime: number,
     timeoutMs: number
 ): boolean {
-    // 1. Timeout ve Base Case Kontrolleri
     if (Date.now() - startTime > timeoutMs) return false;
-    if (index === courses.length) return true; // Tüm dersler atandıysa başarı!
+    if (index === courses.length) return true;
 
     const currentCourse = courses[index];
 
-    // 2. Her zaman dilimini sırayla dene
     for (const timeSlot of timeSlots) {
-        // Döngü içi timeout kontrolü (Büyük veride donmayı önler)
         if (Date.now() - startTime > timeoutMs) return false;
 
-        // 3. Önce Öğrenci Çakışmasını Kontrol Et (Optimization)
-        // Eğer öğrencilerin bu saatte başka sınavı varsa, boş oda aramaya gerek yok.
-        // Not: classrooms[0] dummy olarak verilir, isSafe içinde oda ID'sine bakılmaz (split için).
+        // 1. Öğrenci Kontrolü
         if (!isSafe(currentCourse, classrooms[0], timeSlot, context)) {
             continue;
         }
 
-        // 4. Bu saatteki Müsait Odaları Bul
-        // Daha önce atanmış (dolu) odaların ID'lerini al
+        // 2. Müsait Odalar
         const occupiedRoomIds = new Set(
             context.assignments
                 .filter(a => a.timeSlot.id === timeSlot.id)
                 .map(a => a.classroom.id)
         );
 
-        // Boş odaları filtrele ve KAPASİTEYE göre BÜYÜKTEN KÜÇÜĞE sırala
-        // Bu "Largest Fit" stratejisidir. 150 kişilik ders için önce 100'lük, sonra 50'lik odayı seçer.
         const availableRooms = classrooms
             .filter(r => !occupiedRoomIds.has(r.id))
             .sort((a, b) => b.capacity - a.capacity);
 
-        // 5. Dersi Odalara Bölüştür (Split Logic)
+        // 3. Bölme İşlemi (Split)
         let studentsRemaining = currentCourse.enrolledStudents;
         const potentialAssignments: ScheduleAssignment[] = [];
 
-        // Odalar yettiği sürece doldur
         for (const room of availableRooms) {
             if (studentsRemaining <= 0) break;
-
-            // Odaya sığacak kadarını al (Oda kapasitesi mi, kalan öğrenci mi daha az?)
             const count = Math.min(studentsRemaining, room.capacity);
-            
             potentialAssignments.push({
                 course: currentCourse,
                 classroom: room,
                 timeSlot: timeSlot,
-                studentCount: count // <--- Kritik Nokta: Parçalı öğrenci sayısı
+                studentCount: count
             });
-
             studentsRemaining -= count;
         }
 
-        // 6. Eğer TÜM öğrenciler yerleştiyse (studentsRemaining <= 0)
+        // 4. Eğer Sığdıysa
         if (studentsRemaining <= 0) {
-            // a) Atamaları Yap (Commit)
             for (const assignment of potentialAssignments) {
                 context.assignments.push(assignment);
             }
 
-            // b) Bir Sonraki Dersi Çözmeyi Dene (Recursive Call)
             if (solve(courses, classrooms, timeSlots, context, index + 1, startTime, timeoutMs)) {
-                return true; // Zincirleme başarı!
+                return true;
             }
 
-            // c) Başarısız Olduysa Geri Al (Backtrack)
-            // Eklediğimiz parça sayısı kadar pop yapıyoruz.
+            // Backtrack: Hepsini Geri Al
             for (let i = 0; i < potentialAssignments.length; i++) {
                 context.assignments.pop();
             }
         }
     }
-
-    // Bu ders için hiçbir zaman diliminde uygun yer bulunamadı
     return false;
 }
 
@@ -781,18 +758,12 @@ function solveGreedy(
 
             // 4. ADIM: Eğer tüm öğrenciler yerleştiyse (yani odalar yettiyse), atamayı yap
             if (studentsRemaining <= 0) {
-                let studentsToAssign = course.enrolledStudents;
                 roomsToUse.forEach(room => {
-                    const count = Math.min(studentsToAssign, room.capacity);
-                    if (count > 0) {
-                        context.assignments.push({
-                            course: course,
-                            classroom: room,
-                            timeSlot: timeSlot,
-                            studentCount: count
-                        });
-                        studentsToAssign -= count;
-                    }
+                    context.assignments.push({
+                        course: course,
+                        classroom: room,
+                        timeSlot: timeSlot
+                    });
                 });
                 placed = true;
             }
@@ -1005,10 +976,9 @@ export function generateSchedule(
     const schedule: ExamSession[] = context.assignments.map((a, idx) => ({
         id: `exam_${idx + 1}`,
         courseId: a.course.id,
-        classroomId: a.classroom.id,
+        classroomId: a.classroom.name,
         startTime: a.timeSlot.startTime,
-        endTime: a.timeSlot.endTime,
-        studentCount: a.studentCount
+        endTime: a.timeSlot.endTime
     }));
 
     return {

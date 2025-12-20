@@ -11,6 +11,7 @@ export interface ExamSessionDB {
     start_time: string;
     end_time: string;
     created_at: string;
+    student_count: number;
 }
 
 export interface ExamSessionInput {
@@ -19,6 +20,7 @@ export interface ExamSessionInput {
     classroomName: string;
     startTime: string;
     endTime: string;
+    studentCount?: number;
 }
 
 /**
@@ -31,8 +33,8 @@ export const saveSchedule = (sessions: ExamSessionInput[]): void => {
 
     // Insert new sessions
     const insert = db.prepare(`
-        INSERT INTO exam_sessions (session_id, course_code, classroom_name, start_time, end_time)
-        VALUES (@sessionId, @courseCode, @classroomName, @startTime, @endTime)
+        INSERT INTO exam_sessions (session_id, course_code, classroom_name, start_time, end_time, student_count)
+        VALUES (@sessionId, @courseCode, @classroomName, @startTime, @endTime, @studentCount)
     `);
 
     const insertMany = db.transaction((sessionsList: ExamSessionInput[]) => {
@@ -46,6 +48,7 @@ export const saveSchedule = (sessions: ExamSessionInput[]): void => {
                 endTime: typeof session.endTime === 'string'
                     ? session.endTime
                     : (session.endTime as unknown as Date).toISOString(),
+                studentCount: session.studentCount || 0
             };
             insert.run(sessionData);
         }
@@ -88,11 +91,11 @@ export const exportScheduleToCSV = async (
 ): Promise<{ success: boolean; filePath?: string; message: string }> => {
     try {
         // Create course and classroom lookup maps
-        const courseMap = new Map(courses.map(c => [c.id, c]));
-        const classroomMap = new Map(classrooms.map(c => [c.id, c]));
+        const courseMap = new Map(courses.map(c => [c.code, c]));
+        const classroomMap = new Map(classrooms.map(c => [c.name, c]));
 
         // Build CSV content
-        const headers = ['Exam ID', 'Course Code', 'Course Name', 'Classroom', 'Date', 'Start Time', 'End Time'];
+        const headers = ['Exam ID', 'Course Code', 'Course Name', 'Classroom', 'Student Count', 'Date', 'Start Time', 'End Time'];
         const rows = sessions.map(session => {
             const course = courseMap.get(session.courseCode);
             const classroom = classroomMap.get(session.classroomName);
@@ -104,6 +107,7 @@ export const exportScheduleToCSV = async (
                 course?.code || session.courseCode,
                 course?.name || 'Unknown',
                 classroom?.name || session.classroomName,
+                session.studentCount?.toString() || '0',
                 startDate.toLocaleDateString('en-US'),
                 startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
                 endDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })

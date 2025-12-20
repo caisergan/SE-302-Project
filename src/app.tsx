@@ -62,6 +62,7 @@ const App: React.FC = () => {
           classroomId: s.classroom_name,
           startTime: new Date(s.start_time),
           endTime: new Date(s.end_time),
+          studentCount: s.student_count,
         }));
         setSchedule(loadedSchedule);
         setIsGenerated(true);
@@ -155,6 +156,7 @@ const App: React.FC = () => {
           classroomName: s.classroomId,
           startTime: s.startTime,
           endTime: s.endTime,
+          studentCount: s.studentCount,
         }));
         await window.api.saveSchedule(sessionsForSave);
 

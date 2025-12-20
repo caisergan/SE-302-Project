@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ExamSession, Course, Classroom, Student, DisplaySession } from '../types';
+import { ExamSession, Course, Classroom, Student } from '../types';
 import { TimeSlotDetailModal } from './TimeSlotDetailModal';
 
 interface ScheduleViewProps {
@@ -8,6 +8,14 @@ interface ScheduleViewProps {
   courses: Course[];
   classrooms: Classroom[];
   students: Student[];
+}
+
+// Backend'den gelen veriyi UI'da birleştirmek için genişletilmiş tip
+interface DisplaySession extends ExamSession {
+  isSplit?: boolean;
+  classroomList?: { name: string; count: number }[]; // Birleşmiş sınıf listesi
+  totalStudents?: number;
+  studentCount?: number; // Backend'den gelen ham veri
 }
 
 type FilterMode = 'all' | 'room' | 'course' | 'student';
@@ -21,7 +29,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
 
   // Time slot detail modal state
   const [showTimeSlotModal, setShowTimeSlotModal] = useState(false);
-  const [selectedTimeSlotExams, setSelectedTimeSlotExams] = useState<DisplaySession[]>([]);
+  const [selectedTimeSlotExams, setSelectedTimeSlotExams] = useState<ExamSession[]>([]);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<{ start: Date; end: Date } | null>(null);
 
   // Initialize currentDate based on the first exam in the schedule, or today if schedule is empty
@@ -84,7 +92,11 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
   // 2. Step: Merge Split Exams (TEK DEĞİŞİKLİK BURADA BAŞLIYOR)
   // Aynı ders, aynı saatte ise bunları tek bir görüntüleme objesinde birleştiriyoruz.
   const processedSessions = useMemo(() => {
-    
+    useEffect(() => {
+    console.log("İşlenmiş Veriler:", processedSessions);
+    const splitExams = processedSessions.filter(s => s.isSplit);
+    console.log("Bölünmüş Sınav Sayısı:", splitExams.length);
+}, [processedSessions]);
     // Oda modunda birleştirme yapmıyoruz çünkü odaya özel görüntüleme istiyoruz
     if (filterMode === 'room') return filteredSessions as DisplaySession[];
 
@@ -177,23 +189,18 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
     setExportMessage(null);
 
     try {
-      const sessionsForExport = schedule.map(s => {
-        const course = courses.find(c => c.id === s.courseId);
-        const classroom = classrooms.find(c => c.id === s.classroomId);
-        return {
-          sessionId: s.id,
-          courseCode: course?.code || s.courseId,
-          classroomName: classroom?.name || s.classroomId,
-          startTime: s.startTime instanceof Date ? s.startTime.toISOString() : s.startTime,
-          endTime: s.endTime instanceof Date ? s.endTime.toISOString() : s.endTime,
-          studentCount: s.studentCount
-        };
-      });
+      const sessionsForExport = schedule.map(s => ({
+        sessionId: s.id,
+        courseCode: s.courseId,
+        classroomName: s.classroomId,
+        startTime: s.startTime instanceof Date ? s.startTime.toISOString() : s.startTime,
+        endTime: s.endTime instanceof Date ? s.endTime.toISOString() : s.endTime,
+      }));
 
       const result = await window.api.exportScheduleCSV({
         sessions: sessionsForExport,
         courses: courses.map(c => ({ id: c.id, code: c.code, name: c.name })),
-        classrooms: classrooms.map(c => ({ id: c.id, name: c.name, capacity: c.capacity })),
+        classrooms: classrooms.map(c => ({ id: c.id, name: c.name })),
       });
 
       if (result.success) {
@@ -432,60 +439,42 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
                           ) : (
                             /* Single Course (Split or Normal) */
                             <>
-                              <div className="flex items-baseline gap-2">
                               <div className="text-xs font-bold text-ieu-800 truncate">
                                 {course?.code}
                               </div>
-                              {isSplitExam && (
-                                <span className="bg-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
-                                  {t('schedule.split', 'Split')}
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-[10px] text-ieu-600 font-medium truncate leading-tight">
-                              {course?.name}
-                            </div>
+                              <div className="text-[10px] text-ieu-600 font-medium truncate leading-tight">
+                                {course?.name}
+                              </div>
 
-                            <div className="mt-auto pt-1">
-                              {isSplitExam ? (
-                                // --- SPLIT EXAM DISPLAY ---
-                                <>
-                                  <div className="text-[10px] text-slate-600 font-semibold mb-1 flex items-center gap-1">
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-                                    <span>{t('schedule.totalStudents', { count: firstExam.totalStudents })}</span>
-                                  </div>
+                              <div className="mt-auto pt-1">
+                                {isSplitExam ? (
+                                  // --- SPLIT EXAM DISPLAY ---
                                   <div className="flex flex-wrap gap-1 content-end">
-                                    {(firstExam.classroomList || []).slice(0, 2).map((cr, idx) => (
+                                    {firstExam.classroomList?.map((cr, idx) => (
                                       <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-orange-100 text-orange-700 border border-orange-200">
                                         {classrooms.find(r => r.id === cr.name)?.name || cr.name}
                                         <span className="ml-1 opacity-75">({cr.count})</span>
                                       </span>
                                     ))}
-                                    {firstExam.classroomList && firstExam.classroomList.length > 2 && (
-                                      <span className="text-[9px] font-semibold text-orange-600 self-end">
-                                        +{firstExam.classroomList.length - 2} {t('common.more')}
-                                      </span>
-                                    )}
                                   </div>
-                                </>
-                              ) : (
-                                // --- NORMAL EXAM DISPLAY ---
-                                <>
-                                  {filterMode !== 'room' && (
-                                    <div className="text-[10px] text-ieu-500 flex items-center gap-1 truncate">
-                                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
-                                      {room?.name}
-                                      {firstExam.studentCount ? <span className='opacity-75'>({firstExam.studentCount})</span> : null}
-                                    </div>
-                                  )}
-                                  {filterMode === 'room' && (
-                                    <div className="text-[10px] text-ieu-500 flex items-center gap-1 truncate">
-                                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-                                      {course?.enrolledStudents}
-                                    </div>
-                                  )}
-                                </>
-                              )}
+                                ) : (
+                                  // --- NORMAL EXAM DISPLAY ---
+                                  <>
+                                    {filterMode !== 'room' && (
+                                      <div className="text-[10px] text-ieu-500 flex items-center gap-1 truncate">
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                                        {room?.name}
+                                        {firstExam.studentCount ? <span className='opacity-75'>({firstExam.studentCount})</span> : null}
+                                      </div>
+                                    )}
+                                    {filterMode === 'room' && (
+                                      <div className="text-[10px] text-ieu-500 flex items-center gap-1 truncate">
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+                                        {course?.enrolledStudents}
+                                      </div>
+                                    )}
+                                  </>
+                                )}
                               </div>
                             </>
                           )}

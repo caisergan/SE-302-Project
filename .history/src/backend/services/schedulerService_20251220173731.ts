@@ -235,7 +235,6 @@ function isSafe(
     // Constraint 1: Capacity Check
     // Room must have enough capacity for all enrolled students
    
-   
 
     // Constraint 2: Room Availability Check
     // The classroom must not be already booked at this time
@@ -630,11 +629,6 @@ function getFailureReason(
  * Recursive Backtracking Solver with SPLIT SUPPORT.
  * Tries to schedule courses by splitting them across multiple rooms if necessary.
  */
-/**
- * Recursive Backtracking Solver with SPLIT SUPPORT.
- * Tries to schedule courses by splitting them across multiple rooms if necessary.
- * Strategy: Largest-Fit (Fills largest available rooms first).
- */
 function solve(
     courses: Course[],
     classrooms: Classroom[],
@@ -644,80 +638,77 @@ function solve(
     startTime: number,
     timeoutMs: number
 ): boolean {
-    // 1. Timeout ve Base Case Kontrolleri
+    // Timeout Check
     if (Date.now() - startTime > timeoutMs) return false;
-    if (index === courses.length) return true; // Tüm dersler atandıysa başarı!
+
+    // Base Case: All courses scheduled
+    if (index === courses.length) return true;
 
     const currentCourse = courses[index];
 
-    // 2. Her zaman dilimini sırayla dene
+    // Try each time slot
     for (const timeSlot of timeSlots) {
-        // Döngü içi timeout kontrolü (Büyük veride donmayı önler)
         if (Date.now() - startTime > timeoutMs) return false;
 
-        // 3. Önce Öğrenci Çakışmasını Kontrol Et (Optimization)
-        // Eğer öğrencilerin bu saatte başka sınavı varsa, boş oda aramaya gerek yok.
-        // Not: classrooms[0] dummy olarak verilir, isSafe içinde oda ID'sine bakılmaz (split için).
+        // 1. Check Student Constraints FIRST (Optimization)
+        // If students are busy in this slot, don't bother checking rooms
         if (!isSafe(currentCourse, classrooms[0], timeSlot, context)) {
             continue;
         }
 
-        // 4. Bu saatteki Müsait Odaları Bul
-        // Daha önce atanmış (dolu) odaların ID'lerini al
+        // 2. Find Available Rooms in this Slot
+        // Identify rooms NOT used in this slot by previous recursive steps
         const occupiedRoomIds = new Set(
             context.assignments
                 .filter(a => a.timeSlot.id === timeSlot.id)
                 .map(a => a.classroom.id)
         );
 
-        // Boş odaları filtrele ve KAPASİTEYE göre BÜYÜKTEN KÜÇÜĞE sırala
-        // Bu "Largest Fit" stratejisidir. 150 kişilik ders için önce 100'lük, sonra 50'lik odayı seçer.
+        // Sort available rooms: Largest Capacity First (Best for filling large courses)
         const availableRooms = classrooms
             .filter(r => !occupiedRoomIds.has(r.id))
             .sort((a, b) => b.capacity - a.capacity);
 
-        // 5. Dersi Odalara Bölüştür (Split Logic)
+        // 3. Try to Split the Course
         let studentsRemaining = currentCourse.enrolledStudents;
         const potentialAssignments: ScheduleAssignment[] = [];
 
-        // Odalar yettiği sürece doldur
+        // Fill rooms until students are covered
         for (const room of availableRooms) {
             if (studentsRemaining <= 0) break;
 
-            // Odaya sığacak kadarını al (Oda kapasitesi mi, kalan öğrenci mi daha az?)
             const count = Math.min(studentsRemaining, room.capacity);
             
             potentialAssignments.push({
                 course: currentCourse,
                 classroom: room,
                 timeSlot: timeSlot,
-                studentCount: count // <--- Kritik Nokta: Parçalı öğrenci sayısı
+                studentCount: count
             });
 
             studentsRemaining -= count;
         }
 
-        // 6. Eğer TÜM öğrenciler yerleştiyse (studentsRemaining <= 0)
+        // 4. If we successfully found room(s) for ALL students in this slot
         if (studentsRemaining <= 0) {
-            // a) Atamaları Yap (Commit)
+            // Commit Assignments
             for (const assignment of potentialAssignments) {
                 context.assignments.push(assignment);
             }
 
-            // b) Bir Sonraki Dersi Çözmeyi Dene (Recursive Call)
+            // RECURSE: Try to schedule the NEXT course
             if (solve(courses, classrooms, timeSlots, context, index + 1, startTime, timeoutMs)) {
-                return true; // Zincirleme başarı!
+                return true; // Found a valid full schedule!
             }
 
-            // c) Başarısız Olduysa Geri Al (Backtrack)
-            // Eklediğimiz parça sayısı kadar pop yapıyoruz.
+            // BACKTRACK: If next steps failed, undo these assignments and try next slot
             for (let i = 0; i < potentialAssignments.length; i++) {
                 context.assignments.pop();
             }
         }
     }
 
-    // Bu ders için hiçbir zaman diliminde uygun yer bulunamadı
+    // No valid slot combination found for this course
     return false;
 }
 
@@ -781,18 +772,12 @@ function solveGreedy(
 
             // 4. ADIM: Eğer tüm öğrenciler yerleştiyse (yani odalar yettiyse), atamayı yap
             if (studentsRemaining <= 0) {
-                let studentsToAssign = course.enrolledStudents;
                 roomsToUse.forEach(room => {
-                    const count = Math.min(studentsToAssign, room.capacity);
-                    if (count > 0) {
-                        context.assignments.push({
-                            course: course,
-                            classroom: room,
-                            timeSlot: timeSlot,
-                            studentCount: count
-                        });
-                        studentsToAssign -= count;
-                    }
+                    context.assignments.push({
+                        course: course,
+                        classroom: room,
+                        timeSlot: timeSlot
+                    });
                 });
                 placed = true;
             }
@@ -1005,10 +990,9 @@ export function generateSchedule(
     const schedule: ExamSession[] = context.assignments.map((a, idx) => ({
         id: `exam_${idx + 1}`,
         courseId: a.course.id,
-        classroomId: a.classroom.id,
+        classroomId: a.classroom.name,
         startTime: a.timeSlot.startTime,
-        endTime: a.timeSlot.endTime,
-        studentCount: a.studentCount
+        endTime: a.timeSlot.endTime
     }));
 
     return {

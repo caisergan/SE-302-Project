@@ -18,7 +18,8 @@
         "previousWeek": "Previous Week",
         "nextWeek": "Next Week",
         "today": "Today",
-        "done": "Done"
+        "done": "Done",
+    "more": "more"
     },
     "dashboard": {
         "title": "Dashboard",
@@ -122,7 +123,11 @@
         "multipleExams": "{{count}} Exams",
         "timeSlotDetails": "Time Slot Details",
         "clickForDetails": "Click for details",
-        "enrolledCount": "Enrolled: {{count}}"
+        "enrolledCount": "Enrolled: {{count}}",
+        "splitClassrooms": "Split Classrooms",
+        "split": "Split",
+        "totalStudents": "Total: {{count}}",
+        "studentCount": "Students: {{count}}"
     },
     "settings": {
         "title": "Settings",

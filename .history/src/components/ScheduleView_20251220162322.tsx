@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ExamSession, Course, Classroom, Student, DisplaySession } from '../types';
+import { ExamSession, Course, Classroom, Student } from '../types';
 import { TimeSlotDetailModal } from './TimeSlotDetailModal';
 
 interface ScheduleViewProps {
@@ -21,7 +21,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
 
   // Time slot detail modal state
   const [showTimeSlotModal, setShowTimeSlotModal] = useState(false);
-  const [selectedTimeSlotExams, setSelectedTimeSlotExams] = useState<DisplaySession[]>([]);
+  const [selectedTimeSlotExams, setSelectedTimeSlotExams] = useState<ExamSession[]>([]);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<{ start: Date; end: Date } | null>(null);
 
   // Initialize currentDate based on the first exam in the schedule, or today if schedule is empty
@@ -64,7 +64,6 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
     });
   }, [weekStart]);
 
-  // 1. Step: Basic Filtering
   const filteredSessions = useMemo(() => {
     if (filterMode === 'all') return schedule;
 
@@ -81,45 +80,11 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
     });
   }, [schedule, filterMode, selectedEntityId, students]);
 
-  // 2. Step: Merge Split Exams (TEK DEĞİŞİKLİK BURADA BAŞLIYOR)
-  // Aynı ders, aynı saatte ise bunları tek bir görüntüleme objesinde birleştiriyoruz.
-  const processedSessions = useMemo(() => {
-    
-    // Oda modunda birleştirme yapmıyoruz çünkü odaya özel görüntüleme istiyoruz
-    if (filterMode === 'room') return filteredSessions as DisplaySession[];
-
-    const groupedMap = new Map<string, DisplaySession>();
+  // Group sessions by time slot (sessions with the same start time)
+  const groupedSessionsByTimeSlot = useMemo(() => {
+    const groups = new Map<string, ExamSession[]>();
 
     filteredSessions.forEach(session => {
-      // TypeScript için casting (studentCount backend'den geliyor olabilir ama tipte yoksa hata vermesin)
-      const sCount = (session as any).studentCount || 0; 
-      
-      // Anahtar: Ders Kodu + Başlangıç Zamanı
-      const key = `${session.courseId}-${new Date(session.startTime).toISOString()}`;
-
-      if (!groupedMap.has(key)) {
-        groupedMap.set(key, {
-          ...session,
-          isSplit: false,
-          classroomList: [{ name: session.classroomId, count: sCount }],
-          totalStudents: sCount
-        });
-      } else {
-        const existing = groupedMap.get(key)!;
-        existing.isSplit = true;
-        existing.classroomList?.push({ name: session.classroomId, count: sCount });
-        existing.totalStudents = (existing.totalStudents || 0) + sCount;
-      }
-    });
-
-    return Array.from(groupedMap.values());
-  }, [filteredSessions, filterMode]);
-
-  // 3. Step: Group by Time Slot (processedSessions üzerinden)
-  const groupedSessionsByTimeSlot = useMemo(() => {
-    const groups = new Map<string, DisplaySession[]>();
-
-    processedSessions.forEach(session => {
       const startTime = new Date(session.startTime);
       // Create a key from the date and time
       const key = startTime.toISOString();
@@ -131,13 +96,36 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
     });
 
     return groups;
-  }, [processedSessions]);
-  
+  }, [filteredSessions]);
+  // Helper: Aynı ders ve aynı saatte olan sınavları (Split Exams) tek satırda birleştirir.
+const groupExamsForDisplay = (flatSchedule: any[]) => {
+    const groupedMap = new Map();
+
+    flatSchedule.forEach((session) => {
+        // Benzersiz Anahtar: Ders Kodu + Başlangıç Saati
+        const key = `${session.courseId}-${session.startTime}`;
+
+        if (!groupedMap.has(key)) {
+            // İlk kez karşılaşıyorsak ana yapıyı kuralım
+            groupedMap.set(key, {
+                ...session,
+                classrooms: [{ name: session.classroomId, count: session.studentCount }], // Diziye çeviriyoruz
+                totalStudents: session.studentCount
+            });
+        } else {
+            // Zaten varsa (yani split edilmiş diğer parça geldiyse), sadece sınıfı ekle
+            const existing = groupedMap.get(key);
+            existing.classrooms.push({ name: session.classroomId, count: session.studentCount });
+            existing.totalStudents += session.studentCount;
+        }
+    });
+
+    return Array.from(groupedMap.values());
+};
 
   // Handle time slot card click
-  const handleTimeSlotClick = (exams: DisplaySession[]) => {
+  const handleTimeSlotClick = (exams: ExamSession[]) => {
     if (exams.length > 0) {
-      // Modal için veriyi hazırlarken gerekirse split detaylarını açabiliriz ama şimdilik özet geçiyoruz
       setSelectedTimeSlotExams(exams);
       setSelectedTimeSlot({
         start: new Date(exams[0].startTime),
@@ -150,7 +138,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
   const START_HOUR = 8;
   const END_HOUR = 22;
   const HOURS_COUNT = END_HOUR - START_HOUR;
-  const HOUR_HEIGHT = 80; // Split badge'leri sığsın diye yüksekliği 64'ten 80'e çıkardım
+  const HOUR_HEIGHT = 64;
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -177,23 +165,18 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
     setExportMessage(null);
 
     try {
-      const sessionsForExport = schedule.map(s => {
-        const course = courses.find(c => c.id === s.courseId);
-        const classroom = classrooms.find(c => c.id === s.classroomId);
-        return {
-          sessionId: s.id,
-          courseCode: course?.code || s.courseId,
-          classroomName: classroom?.name || s.classroomId,
-          startTime: s.startTime instanceof Date ? s.startTime.toISOString() : s.startTime,
-          endTime: s.endTime instanceof Date ? s.endTime.toISOString() : s.endTime,
-          studentCount: s.studentCount
-        };
-      });
+      const sessionsForExport = schedule.map(s => ({
+        sessionId: s.id,
+        courseCode: s.courseId,
+        classroomName: s.classroomId,
+        startTime: s.startTime instanceof Date ? s.startTime.toISOString() : s.startTime,
+        endTime: s.endTime instanceof Date ? s.endTime.toISOString() : s.endTime,
+      }));
 
       const result = await window.api.exportScheduleCSV({
         sessions: sessionsForExport,
         courses: courses.map(c => ({ id: c.id, code: c.code, name: c.name })),
-        classrooms: classrooms.map(c => ({ id: c.id, name: c.name, capacity: c.capacity })),
+        classrooms: classrooms.map(c => ({ id: c.id, name: c.name })),
       });
 
       if (result.success) {
@@ -325,7 +308,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
       </div>
 
       <div className="flex-1 overflow-auto relative">
-        <div className="min-w-[1000px]"> {/* Increased width for split badges */}
+        <div className="min-w-[800px]">
           <div className="grid grid-cols-8 sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm">
             <div className="p-3 text-center text-xs font-semibold text-slate-400 border-r border-slate-100">
               GMT+0
@@ -374,13 +357,8 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
                     const top = (startMinutes / 60) * HOUR_HEIGHT;
                     const height = (durationMinutes / 60) * HOUR_HEIGHT;
 
-                    // Condition 1: Multiple Different Courses in same slot
-                    const isMultipleDifferentExams = examsInSlot.length > 1;
-                    
-                    // Condition 2: Single Course but Split (Has merged classroom list)
+                    const isMultipleExams = examsInSlot.length > 1;
                     const firstExam = examsInSlot[0];
-                    const isSplitExam = firstExam.isSplit;
-                    
                     const course = courses.find(c => c.id === firstExam.courseId);
                     const room = classrooms.find(r => r.id === firstExam.classroomId);
 
@@ -391,16 +369,16 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
                         style={{
                           top: `${top}px`,
                           height: `${height}px`,
-                          backgroundColor: isMultipleDifferentExams ? 'rgba(219, 234, 254, 0.98)' : (isSplitExam ? '#fff7ed' : 'rgba(239, 246, 255, 0.95)'),
-                          borderColor: isMultipleDifferentExams ? '#3b82f6' : (isSplitExam ? '#f97316' : '#6366f1'),
+                          backgroundColor: isMultipleExams ? 'rgba(219, 234, 254, 0.98)' : 'rgba(239, 246, 255, 0.95)',
+                          borderColor: isMultipleExams ? '#3b82f6' : '#6366f1',
                           borderWidth: '1px',
                           borderLeftWidth: '4px'
                         }}
                         onClick={() => handleTimeSlotClick(examsInSlot)}
                       >
                         <div className="p-2 h-full flex flex-col">
-                          {isMultipleDifferentExams ? (
-                            /* Multiple different courses at same time */
+                          {isMultipleExams ? (
+                            /* Multiple exams - show count and summary */
                             <>
                               <div className="flex items-center gap-1 mb-1">
                                 <div className="bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
@@ -430,63 +408,26 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
                               </div>
                             </>
                           ) : (
-                            /* Single Course (Split or Normal) */
+                            /* Single exam - show details directly */
                             <>
-                              <div className="flex items-baseline gap-2">
                               <div className="text-xs font-bold text-ieu-800 truncate">
                                 {course?.code}
                               </div>
-                              {isSplitExam && (
-                                <span className="bg-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
-                                  {t('schedule.split', 'Split')}
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-[10px] text-ieu-600 font-medium truncate leading-tight">
-                              {course?.name}
-                            </div>
-
-                            <div className="mt-auto pt-1">
-                              {isSplitExam ? (
-                                // --- SPLIT EXAM DISPLAY ---
-                                <>
-                                  <div className="text-[10px] text-slate-600 font-semibold mb-1 flex items-center gap-1">
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-                                    <span>{t('schedule.totalStudents', { count: firstExam.totalStudents })}</span>
-                                  </div>
-                                  <div className="flex flex-wrap gap-1 content-end">
-                                    {(firstExam.classroomList || []).slice(0, 2).map((cr, idx) => (
-                                      <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-orange-100 text-orange-700 border border-orange-200">
-                                        {classrooms.find(r => r.id === cr.name)?.name || cr.name}
-                                        <span className="ml-1 opacity-75">({cr.count})</span>
-                                      </span>
-                                    ))}
-                                    {firstExam.classroomList && firstExam.classroomList.length > 2 && (
-                                      <span className="text-[9px] font-semibold text-orange-600 self-end">
-                                        +{firstExam.classroomList.length - 2} {t('common.more')}
-                                      </span>
-                                    )}
-                                  </div>
-                                </>
-                              ) : (
-                                // --- NORMAL EXAM DISPLAY ---
-                                <>
-                                  {filterMode !== 'room' && (
-                                    <div className="text-[10px] text-ieu-500 flex items-center gap-1 truncate">
-                                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
-                                      {room?.name}
-                                      {firstExam.studentCount ? <span className='opacity-75'>({firstExam.studentCount})</span> : null}
-                                    </div>
-                                  )}
-                                  {filterMode === 'room' && (
-                                    <div className="text-[10px] text-ieu-500 flex items-center gap-1 truncate">
-                                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-                                      {course?.enrolledStudents}
-                                    </div>
-                                  )}
-                                </>
-                              )}
+                              <div className="text-[10px] text-ieu-600 font-medium truncate leading-tight">
+                                {course?.name}
                               </div>
+                              {filterMode !== 'room' && (
+                                <div className="mt-auto pt-1 text-[10px] text-ieu-500 flex items-center gap-1 truncate">
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                                  {room?.name}
+                                </div>
+                              )}
+                              {filterMode === 'room' && (
+                                <div className="mt-auto pt-1 text-[10px] text-ieu-500 flex items-center gap-1 truncate">
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+                                  {course?.enrolledStudents}
+                                </div>
+                              )}
                             </>
                           )}
                         </div>

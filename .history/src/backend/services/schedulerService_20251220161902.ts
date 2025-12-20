@@ -24,8 +24,6 @@ interface ScheduleAssignment {
     course: Course;
     classroom: Classroom;
     timeSlot: TimeSlot;
-    studentCount:number;
-    
 }
 
 /**
@@ -235,7 +233,6 @@ function isSafe(
     // Constraint 1: Capacity Check
     // Room must have enough capacity for all enrolled students
    
-   
 
     // Constraint 2: Room Availability Check
     // The classroom must not be already booked at this time
@@ -253,7 +250,6 @@ function isSafe(
         // Constraint 3: No Student Conflicts
         // A student cannot have two exams at the same time slot
         const sameTimeConflict = context.assignments.some((a) => {
-            if (a.course.id === course.id) return false;
             const studentsInAssignedCourse = context.courseStudentMap.get(a.course.id) || [];
             return studentsInAssignedCourse.includes(studentId) && a.timeSlot.id === timeSlot.id;
         });
@@ -626,15 +622,6 @@ function getFailureReason(
  * @param maxIterations - Maximum allowed iterations before timeout
  * @returns true if a valid schedule was found, false otherwise
  */
-/**
- * Recursive Backtracking Solver with SPLIT SUPPORT.
- * Tries to schedule courses by splitting them across multiple rooms if necessary.
- */
-/**
- * Recursive Backtracking Solver with SPLIT SUPPORT.
- * Tries to schedule courses by splitting them across multiple rooms if necessary.
- * Strategy: Largest-Fit (Fills largest available rooms first).
- */
 function solve(
     courses: Course[],
     classrooms: Classroom[],
@@ -644,80 +631,49 @@ function solve(
     startTime: number,
     timeoutMs: number
 ): boolean {
-    // 1. Timeout ve Base Case Kontrolleri
-    if (Date.now() - startTime > timeoutMs) return false;
-    if (index === courses.length) return true; // Tüm dersler atandıysa başarı!
+    // Check for timeout (time-based, not iteration-based)
+    if (Date.now() - startTime > timeoutMs) {
+        return false; // Stop trying - timeout reached
+    }
+
+    // Base case: All courses have been scheduled
+    if (index === courses.length) {
+        return true;
+    }
 
     const currentCourse = courses[index];
 
-    // 2. Her zaman dilimini sırayla dene
+    // Try each time slot
     for (const timeSlot of timeSlots) {
-        // Döngü içi timeout kontrolü (Büyük veride donmayı önler)
-        if (Date.now() - startTime > timeoutMs) return false;
-
-        // 3. Önce Öğrenci Çakışmasını Kontrol Et (Optimization)
-        // Eğer öğrencilerin bu saatte başka sınavı varsa, boş oda aramaya gerek yok.
-        // Not: classrooms[0] dummy olarak verilir, isSafe içinde oda ID'sine bakılmaz (split için).
-        if (!isSafe(currentCourse, classrooms[0], timeSlot, context)) {
-            continue;
+        // Check for timeout in inner loop
+        if (Date.now() - startTime > timeoutMs) {
+            return false;
         }
 
-        // 4. Bu saatteki Müsait Odaları Bul
-        // Daha önce atanmış (dolu) odaların ID'lerini al
-        const occupiedRoomIds = new Set(
-            context.assignments
-                .filter(a => a.timeSlot.id === timeSlot.id)
-                .map(a => a.classroom.id)
-        );
-
-        // Boş odaları filtrele ve KAPASİTEYE göre BÜYÜKTEN KÜÇÜĞE sırala
-        // Bu "Largest Fit" stratejisidir. 150 kişilik ders için önce 100'lük, sonra 50'lik odayı seçer.
-        const availableRooms = classrooms
-            .filter(r => !occupiedRoomIds.has(r.id))
-            .sort((a, b) => b.capacity - a.capacity);
-
-        // 5. Dersi Odalara Bölüştür (Split Logic)
-        let studentsRemaining = currentCourse.enrolledStudents;
-        const potentialAssignments: ScheduleAssignment[] = [];
-
-        // Odalar yettiği sürece doldur
-        for (const room of availableRooms) {
-            if (studentsRemaining <= 0) break;
-
-            // Odaya sığacak kadarını al (Oda kapasitesi mi, kalan öğrenci mi daha az?)
-            const count = Math.min(studentsRemaining, room.capacity);
-            
-            potentialAssignments.push({
-                course: currentCourse,
-                classroom: room,
-                timeSlot: timeSlot,
-                studentCount: count // <--- Kritik Nokta: Parçalı öğrenci sayısı
-            });
-
-            studentsRemaining -= count;
-        }
-
-        // 6. Eğer TÜM öğrenciler yerleştiyse (studentsRemaining <= 0)
-        if (studentsRemaining <= 0) {
-            // a) Atamaları Yap (Commit)
-            for (const assignment of potentialAssignments) {
+        // Try each classroom
+        for (const classroom of classrooms) {
+            // Check if this assignment satisfies all constraints
+            if (isSafe(currentCourse, classroom, timeSlot, context)) {
+                // Make the assignment
+                const assignment: ScheduleAssignment = {
+                    course: currentCourse,
+                    classroom,
+                    timeSlot
+                };
                 context.assignments.push(assignment);
-            }
 
-            // b) Bir Sonraki Dersi Çözmeyi Dene (Recursive Call)
-            if (solve(courses, classrooms, timeSlots, context, index + 1, startTime, timeoutMs)) {
-                return true; // Zincirleme başarı!
-            }
+                // Recursively try to schedule the remaining courses
+                if (solve(courses, classrooms, timeSlots, context, index + 1, startTime, timeoutMs)) {
+                    return true;
+                }
 
-            // c) Başarısız Olduysa Geri Al (Backtrack)
-            // Eklediğimiz parça sayısı kadar pop yapıyoruz.
-            for (let i = 0; i < potentialAssignments.length; i++) {
+                // Backtrack: Remove the assignment and try another option
                 context.assignments.pop();
             }
         }
     }
 
-    // Bu ders için hiçbir zaman diliminde uygun yer bulunamadı
+    // No valid assignment found for this course
     return false;
 }
 
@@ -727,86 +683,53 @@ function solve(
  * O(courses * timeSlots * classrooms) - much faster than backtracking.
  * Returns both success status and detailed failure reason if failed.
  */
-/**
- * Greedy scheduling algorithm with SPLIT SUPPORT.
- * Tries to fit a course into one OR MORE classrooms if needed.
- */
 function solveGreedy(
     courses: Course[],
     classrooms: Classroom[],
     timeSlots: TimeSlot[],
     context: ValidationContext
 ): { success: boolean; failureReason?: FailureReason } {
-    console.log(`Greedy solver (Split-Enabled): ${courses.length} courses, ${timeSlots.length} slots.`);
+    console.log(`Greedy solver: ${courses.length} courses, ${timeSlots.length} slots, ${classrooms.length} rooms`);
 
     for (let i = 0; i < courses.length; i++) {
         const course = courses[i];
-        let placed = false;
+        let assigned = false;
 
-        // Her zaman dilimini dene
+        // Try each time slot
         for (const timeSlot of timeSlots) {
-            if (placed) break;
+            if (assigned) break;
 
-            // 1. ADIM: Öğrenci çakışması (Student Conflict) var mı?
-            // Herhangi bir odada bu dersi yapabilir miyiz diye genel bir kontrol yapalım.
-            // Not: İlk odayı referans alıyoruz çünkü isSafe içindeki öğrenci kontrolü odadan bağımsızdır.
-            if (!isSafe(course, classrooms[0], timeSlot, context)) {
-                continue; // Öğrencilerin bu saatte başka sınavı var, bu saati geç.
-            }
-
-            // 2. ADIM: Bu saatteki BOŞ odaları bul
-            const occupiedRoomIds = new Set(
-                context.assignments
-                .filter(a => a.timeSlot.id === timeSlot.id)
-                .map(a => a.classroom.id)
-            );
-
-            // Boş odaları KAPASİTEYE göre BÜYÜKTEN KÜÇÜĞE sırala (Largest Fit)
-            const availableRooms = classrooms
-                .filter(r => !occupiedRoomIds.has(r.id))
-                .sort((a, b) => b.capacity - a.capacity); 
-
-            // 3. ADIM: Öğrencileri odalara dağıt (SPLIT MANTIĞI)
-            let studentsRemaining = course.enrolledStudents;
-            const roomsToUse: Classroom[] = [];
-
-            for (const room of availableRooms) {
-                if (studentsRemaining <= 0) break;
-
-                // Odayı kullan listesine al
-                roomsToUse.push(room);
-                // Öğrencileri bu odaya doldur
-                studentsRemaining -= room.capacity;
-            }
-
-            // 4. ADIM: Eğer tüm öğrenciler yerleştiyse (yani odalar yettiyse), atamayı yap
-            if (studentsRemaining <= 0) {
-                let studentsToAssign = course.enrolledStudents;
-                roomsToUse.forEach(room => {
-                    const count = Math.min(studentsToAssign, room.capacity);
-                    if (count > 0) {
-                        context.assignments.push({
-                            course: course,
-                            classroom: room,
-                            timeSlot: timeSlot,
-                            studentCount: count
-                        });
-                        studentsToAssign -= count;
-                    }
-                });
-                placed = true;
+            // Try each classroom
+            for (const classroom of classrooms) {
+                if (isSafe(course, classroom, timeSlot, context)) {
+                    // Make the assignment
+                    context.assignments.push({
+                        course,
+                        classroom,
+                        timeSlot
+                    });
+                    assigned = true;
+                    break;
+                }
             }
         }
 
-        if (!placed) {
+        if (!assigned) {
+            // Could not find a valid slot for this course - analyze why
             const failureReason = getFailureReason(course, classrooms, timeSlots, context, i, courses.length);
-            console.log(`FAILED at course ${course.code}: Not enough room capacity (even with splitting) or time slots.`);
+            console.log(`FAILED at course ${i + 1}/${courses.length}: ${course.code} (${course.enrolledStudents} students)`);
+            console.log(`  Root cause: ${failureReason.rootCause}`);
             return { success: false, failureReason };
+        }
+
+        // Progress log every 20 courses
+        if ((i + 1) % 20 === 0) {
+            console.log(`  Progress: ${i + 1}/${courses.length} courses scheduled`);
         }
     }
 
     console.log(`SUCCESS: All ${courses.length} courses scheduled!`);
-    return { success: true };
+    return { success: true }; // All courses scheduled
 }
 
 // ============================================================================
@@ -1005,10 +928,9 @@ export function generateSchedule(
     const schedule: ExamSession[] = context.assignments.map((a, idx) => ({
         id: `exam_${idx + 1}`,
         courseId: a.course.id,
-        classroomId: a.classroom.id,
+        classroomId: a.classroom.name,
         startTime: a.timeSlot.startTime,
-        endTime: a.timeSlot.endTime,
-        studentCount: a.studentCount
+        endTime: a.timeSlot.endTime
     }));
 
     return {

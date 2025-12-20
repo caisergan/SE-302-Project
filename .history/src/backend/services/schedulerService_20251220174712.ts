@@ -781,18 +781,13 @@ function solveGreedy(
 
             // 4. ADIM: Eğer tüm öğrenciler yerleştiyse (yani odalar yettiyse), atamayı yap
             if (studentsRemaining <= 0) {
-                let studentsToAssign = course.enrolledStudents;
                 roomsToUse.forEach(room => {
-                    const count = Math.min(studentsToAssign, room.capacity);
-                    if (count > 0) {
-                        context.assignments.push({
-                            course: course,
-                            classroom: room,
-                            timeSlot: timeSlot,
-                            studentCount: count
-                        });
-                        studentsToAssign -= count;
-                    }
+                    context.assignments.push({
+                        course: course,
+                        classroom: room,
+                        timeSlot: timeSlot,
+                        studentCount: number
+                    });
                 });
                 placed = true;
             }
@@ -1005,10 +1000,9 @@ export function generateSchedule(
     const schedule: ExamSession[] = context.assignments.map((a, idx) => ({
         id: `exam_${idx + 1}`,
         courseId: a.course.id,
-        classroomId: a.classroom.id,
+        classroomId: a.classroom.name,
         startTime: a.timeSlot.startTime,
-        endTime: a.timeSlot.endTime,
-        studentCount: a.studentCount
+        endTime: a.timeSlot.endTime
     }));
 
     return {
