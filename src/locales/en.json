@@ -198,6 +198,13 @@
         "lastExamTime": "Last Exam Start Time",
         "timeWarning": "No exams will start after this time",
         "cancel": "Cancel",
-        "generate": "Generate Schedule"
+        "generate": "Generate Schedule",
+        "studentConstraints": "STUDENT CONSTRAINTS",
+        "maxExamsPerDay": "Max Exams Per Student Per Day",
+        "minHoursBetweenExams": "Minimum Hours Between Exams",
+        "noLimit": "No limit",
+        "noMinimum": "No minimum",
+        "hour": "hour",
+        "hours": "hours"
     }
 }

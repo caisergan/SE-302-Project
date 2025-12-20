@@ -196,6 +196,13 @@
         "lastExamTime": "Son Sınav Başlangıç Saati",
         "timeWarning": "Bu saatten sonra sınav başlatılmaz",
         "cancel": "İptal",
-        "generate": "Program Oluştur"
+        "generate": "Program Oluştur",
+        "studentConstraints": "ÖĞRENCİ KISITLAMALARI",
+        "maxExamsPerDay": "Günlük Maksimum Sınav Sayısı",
+        "minHoursBetweenExams": "Sınavlar Arası Minimum Süre",
+        "noLimit": "Sınırsız",
+        "noMinimum": "Minimum Yok",
+        "hour": "saat",
+        "hours": "saat"
     }
 }
