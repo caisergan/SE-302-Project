@@ -20,7 +20,7 @@ export const ConstraintSelector: React.FC<ConstraintSelectorProps> = ({ onBack, 
     const [endDate, setEndDate] = useState<string>(nextWeek.toISOString().split('T')[0]);
     const [includeWeekends, setIncludeWeekends] = useState<boolean>(true);
     const [dailyStartTime, setDailyStartTime] = useState<string>("09:00");
-    const [dailyEndTime, setDailyEndTime] = useState<string>("08:00");
+    const [dailyEndTime, setDailyEndTime] = useState<string>("20:00");
     const [maxExamsPerDay, setMaxExamsPerDay] = useState<number>(2);
     const [minHoursBetweenExams, setMinHoursBetweenExams] = useState<number>(1);
 
@@ -173,7 +173,6 @@ export const ConstraintSelector: React.FC<ConstraintSelectorProps> = ({ onBack, 
                                         onChange={(e) => setMinHoursBetweenExams(Number(e.target.value))}
                                         className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-ieu-500 focus:border-ieu-500 outline-none transition-all"
                                     >
-                                        <option value={0}>0 ({t('constraintsModal.noMinimum')})</option>
                                         <option value={1}>1 {t('constraintsModal.hour')}</option>
                                         <option value={2}>2 {t('constraintsModal.hours')}</option>
                                         <option value={3}>3 {t('constraintsModal.hours')}</option>

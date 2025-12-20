@@ -66,11 +66,11 @@ export const TimeSlotDetailModal: React.FC<TimeSlotDetailModalProps> = ({
             onClick={onClose}
         >
             <div
-                className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden"
+                className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-ieu-500 to-ieu-600">
+                <div className="px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-ieu-500 to-ieu-600 flex-shrink-0">
                     <div className="flex justify-between items-start">
                         <div>
                             <h2 className="text-lg font-bold text-white">
@@ -102,7 +102,7 @@ export const TimeSlotDetailModal: React.FC<TimeSlotDetailModalProps> = ({
                 </div>
 
                 {/* Exam List */}
-                <div className="overflow-y-auto max-h-[calc(80vh-180px)] p-4 space-y-3">
+                <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
                     {exams.map((exam, index) => {
                         const course = courses.find(c => c.id === exam.courseId);
                         const classroom = classrooms.find(c => c.id === exam.classroomId);
@@ -163,7 +163,7 @@ export const TimeSlotDetailModal: React.FC<TimeSlotDetailModalProps> = ({
                 </div>
 
                 {/* Footer */}
-                <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-end">
+                <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-end flex-shrink-0">
                     <button
                         onClick={onClose}
                         className="px-4 py-2 bg-ieu-500 text-white rounded-lg hover:bg-ieu-600 transition-colors font-medium"
