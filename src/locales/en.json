@@ -90,7 +90,8 @@
         "building": "Building",
         "enrolledStudents": "Enrolled Students",
         "enrolledCourses": "Enrolled Courses",
-        "studentNameGenerated": "Name (Generated)"
+        "studentNameGenerated": "Name (Generated)",
+        "attendance": "Attendance List"
     },
     "schedule": {
         "title": "Schedule View",
@@ -171,7 +172,13 @@
         "csvExport": "Excel / CSV Output",
         "autoSave": "Auto Save",
         "autoSaveDesc": "Your actions are saved to the database instantly.",
-        "generateImage": "/assets/help/generate1-en.png"
+        "generateImage": "/assets/help/generate-en.png",
+        "importCoursesImage": "/assets/help/import_courses-en.png",
+        "importClassroomsImage": "/assets/help/import_classrooms-en.png",
+        "importStudentsImage": "/assets/help/import_students-en.png",
+        "importStudentsImage2": "/assets/help/student2-en.png",
+        "importAttendanceImage": "/assets/help/import_attendance-en.png",
+        "importAttendanceImage2": "/assets/help/attendance2-en.png"
     },
     "constraintsModal": {
         "title": "Exam Schedule Constraints",
