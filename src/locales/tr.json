@@ -98,7 +98,8 @@
         "importStudentInfoDesc": "Öğrenci ID ve isimlerini içeren dosyayı içe aktarın (örn. sampleData_AllStudents.csv)",
         "importAttendance": "Devam Verileri",
         "importAttendanceDesc": "Ders-öğrenci kayıtlarını içeren dosyayı içe aktarın (örn. sampleData_AllAttendanceLists.csv)",
-        "importedStudents": "{{count}} öğrenci aktarıldı."
+        "importedStudents": "{{count}} öğrenci aktarıldı.",
+        "attendance":"Yoklama Listesi"
     },
     "schedule": {
         "title": "Program Görünümü",
