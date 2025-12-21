@@ -18,7 +18,8 @@
         "previousWeek": "Önceki Hafta",
         "nextWeek": "Sonraki Hafta",
         "today": "Bugün",
-        "done": "Tamam"
+        "done": "Tamam",
+    "more": "daha fazla"
     },
     "dashboard": {
         "title": "Panel",
@@ -121,7 +122,11 @@
         "multipleExams": "{{count}} Sınav",
         "timeSlotDetails": "Zaman Dilimi Detayları",
         "clickForDetails": "Detaylar için tıklayın",
-        "enrolledCount": "Kayıtlı: {{count}}"
+        "enrolledCount": "Kayıtlı: {{count}}",
+        "splitClassrooms": "Bölünmüş Derslikler",
+        "split": "Bölünmüş",
+        "totalStudents": "Toplam: {{count}}",
+        "studentCount": "Öğrenci: {{count}}"
     },
     "settings": {
         "title": "Ayarlar",

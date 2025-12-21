@@ -43,6 +43,7 @@ db.exec(`
     session_id TEXT NOT NULL,
     course_code TEXT NOT NULL,
     classroom_name TEXT NOT NULL,
+    student_count INTEGER DEFAULT 0,
     start_time TEXT NOT NULL,
     end_time TEXT NOT NULL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP

@@ -31,7 +31,7 @@ export interface Classroom {
 }
 
 export interface Student {
-  id: string;
+  id:string;
   name: string;
   email: string;
   enrolledCourses: string[]; // Array of Course IDs
@@ -43,10 +43,21 @@ export interface ExamSession {
   classroomId: string;
   startTime: Date;
   endTime: Date;
+  studentCount?: number;
 }
 
 export interface DataContextType {
   courses: Course[];
   classrooms: Classroom[];
   students: Student[];
+}
+
+/**
+ * Represents an exam session that has been processed for UI display.
+ * It may be a single session or a combination of multiple sessions for a split exam.
+ */
+export interface DisplaySession extends ExamSession {
+  isSplit?: boolean;
+  classroomList?: { name: string; count: number }[]; // List of classrooms for a split exam
+  totalStudents?: number;
 }
