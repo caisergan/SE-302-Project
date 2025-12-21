@@ -294,129 +294,7 @@ const StudentImportModal: React.FC<StudentImportModalProps> = ({
     );
 };
 
-interface ImportStatus {
-    fileName: string;
-    count: number;
-}
 
-interface StudentImportModalProps {
-    onClose: () => void;
-    onSelectStudentInfo: () => void;
-    onSelectAttendance: () => void;
-    studentInfoStatus: ImportStatus | null;
-    attendanceStatus: ImportStatus | null;
-    onSave: () => void;
-}
-
-const StudentImportModal: React.FC<StudentImportModalProps> = ({
-    onClose,
-    onSelectStudentInfo,
-    onSelectAttendance,
-    studentInfoStatus,
-    attendanceStatus,
-    onSave
-}) => {
-    const { t } = useTranslation();
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100">
-                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                    <h3 className="font-bold text-slate-800">
-                        {t('dataInput.importStudentsTitle') || 'Import Student Data'}
-                    </h3>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                    </button>
-                </div>
-                <div className="p-6 space-y-4">
-                    <p className="text-sm text-slate-500 mb-4">
-                        {t('dataInput.importStudentsDesc') || 'Select the type of file you want to import:'}
-                    </p>
-
-                    {/* Student Info Card */}
-                    <div
-                        className={`border rounded-lg p-4 cursor-pointer transition-all group ${studentInfoStatus ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50'}`}
-                        onClick={onSelectStudentInfo}
-                    >
-                        <div className="flex items-start gap-4">
-                            <div className={`p-3 rounded-lg transition-colors ${studentInfoStatus ? 'bg-indigo-200 text-indigo-700' : 'bg-indigo-100 text-indigo-600 group-hover:bg-indigo-200'}`}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                                    <circle cx="9" cy="7" r="4" />
-                                    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                                </svg>
-                            </div>
-                            <div className="flex-1">
-                                <h4 className="font-semibold text-slate-800 mb-1">
-                                    {t('dataInput.importStudentInfo') || 'Student Information'}
-                                </h4>
-                                <p className="text-sm text-slate-500">
-                                    {studentInfoStatus
-                                        ? <span>{studentInfoStatus.fileName} <br /><span className="font-medium text-indigo-700">{studentInfoStatus.count} records found</span></span>
-                                        : (t('dataInput.importStudentInfoDesc') || 'Import a file containing student IDs and names (e.g., realData_AllStudents.csv)')
-                                    }
-                                </p>
-                            </div>
-                            <div className={`transition-colors ${studentInfoStatus ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-500'}`}>
-                                {studentInfoStatus ? (
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                                ) : (
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Attendance Card */}
-                    <div
-                        className={`border rounded-lg p-4 cursor-pointer transition-all group ${attendanceStatus ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/50'}`}
-                        onClick={onSelectAttendance}
-                    >
-                        <div className="flex items-start gap-4">
-                            <div className={`p-3 rounded-lg transition-colors ${attendanceStatus ? 'bg-emerald-200 text-emerald-700' : 'bg-emerald-100 text-emerald-600 group-hover:bg-emerald-200'}`}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                                    <polyline points="14 2 14 8 20 8" />
-                                    <line x1="16" y1="13" x2="8" y2="13" />
-                                    <line x1="16" y1="17" x2="8" y2="17" />
-                                    <polyline points="10 9 9 9 8 9" />
-                                </svg>
-                            </div>
-                            <div className="flex-1">
-                                <h4 className="font-semibold text-slate-800 mb-1">
-                                    {t('dataInput.importAttendance') || 'Attendance Data'}
-                                </h4>
-                                <p className="text-sm text-slate-500">
-                                    {attendanceStatus
-                                        ? <span>{attendanceStatus.fileName} <br /><span className="font-medium text-emerald-700">{attendanceStatus.count} records found</span></span>
-                                        : (t('dataInput.importAttendanceDesc') || 'Import a file containing course-student enrollments (e.g., realData_AllAttendanceLists.csv)')
-                                    }
-                                </p>
-                            </div>
-                            <div className={`transition-colors ${attendanceStatus ? 'text-emerald-600' : 'text-slate-400 group-hover:text-emerald-500'}`}>
-                                {attendanceStatus ? (
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                                ) : (
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
-                    <button
-                        onClick={onSave}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm transition-colors"
-                    >
-                        {t('common.done') || 'Done'}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
 
 export const DataInput: React.FC<DataInputProps> = ({
     courses, setCourses, classrooms, setClassrooms, students, setStudents
@@ -763,130 +641,53 @@ export const DataInput: React.FC<DataInputProps> = ({
         setIsStudentImportModalOpen(false);
     };
 
-    const parseSimpleStudentList = async (rows: string[]) => {
-        const map = extractStudentMap(rows);
-        const newStudents: any[] = [];
-        map.forEach((name, id) => {
-            newStudents.push({
-                studentNumber: id,
-                name: name,
-                enrolledCourses: []
-            });
-        });
 
-            showNotification(t('dataInput.importedStudents', { count: newStudents.length }), 'success');
-        } else {
-            // Maybe show error if nothing to save?
-            // But if they clicked Done with nothing, maybe just close.
-        }
-        setIsStudentImportModalOpen(false);
-    };
 
     // --- Parsing Wrappers for ProcessCSV (Legacy/Direct) ---
 
-    // Updated to use the correct logic but immediately save (same behavior as before but cleaner)
-    const parseSimpleStudentList = async (rows: string[]): Promise<number> => {
-        const map = extractStudentMap(rows);
-        // We need to merge this with potentially existing data? 
-        // processCSV is usually for bulk import of everything.
-        // For safely: we just save what we found.
-        const newStudents: any[] = [];
-        map.forEach((name, id) => {
-            newStudents.push({
-                studentNumber: id,
-                name: name,
-                enrolledCourses: []
-            });
-        });
-
-        if (newStudents.length > 0) {
-            await window.api.addStudentsBulk(newStudents);
-            // Refresh...
-            const savedStudents = await window.api.getStudents();
-            setStudents(savedStudents.map((s: any) => ({
-                id: s.student_number,
-                name: s.name,
-                email: `${s.student_number.toLowerCase()}@uni.edu`,
-                enrolledCourses: s.enrolled_courses
-            })));
-            showNotification(t('dataInput.importedStudents', { count: newStudents.length }), 'success');
-            return newStudents.length;
-        }
-        return 0;
-    };
-
-    const parseStudentAttendanceFile = async (rows: string[]): Promise<number> => {
-        const map = extractAttendanceMap(rows);
-        const newStudents: any[] = [];
-        map.forEach((courses, id) => {
-            newStudents.push({
-                studentNumber: id,
-                name: `Student ${id}`,
-                enrolledCourses: Array.from(courses)
-            });
-        });
-
-        if (newStudents.length > 0) {
-            await window.api.addStudentsBulk(newStudents);
-            // Refresh...
-            const savedStudents = await window.api.getStudents();
-            setStudents(savedStudents.map((s: any) => ({
-                id: s.student_number,
-                name: s.name,
-                email: `${s.student_number.toLowerCase()}@uni.edu`,
-                enrolledCourses: s.enrolled_courses
-            })));
-            const savedCourses = await window.api.getCourses();
-            setCourses(savedCourses.map((c: any) => ({
-                id: c.code,
-                code: c.code,
-                name: c.name,
-                enrolledStudents: c.enrolled_students
-            })));
-
-            showNotification(t('dataInput.processedAttendance', { count: newStudents.length }), 'success');
-            return newStudents.length;
-        }
-        return 0;
-    };
-
+    
     const processCSV = (text: string) => {
         const rows = text.split('\n').map(r => r.trim()).filter(r => r.length > 0);
         if (rows.length === 0) return;
+
         if (activeTab === 'classrooms') {
-            if (text.includes(';') || rows[0].includes('CLASSROOMS')) parseClassroomFile(rows);
-            else showNotification(t('dataInput.formatError'), 'error');
+            parseClassroomFile(rows);
         } else if (activeTab === 'courses') {
-            if (rows[0].includes('COURSES IN THE SYSTEM') || rows.some(r => r.startsWith('CourseCode_'))) parseCourseListFile(rows);
-            else showNotification(t('dataInput.formatError'), 'error');
-        } else if (activeTab === 'students') {
-            if (text.includes('[') && text.includes(']')) parseStudentAttendanceFile(rows);
-            else if (rows[0].includes('ALL OF THE STUDENTS') || rows.some(r => r.startsWith('Std_ID_'))) parseSimpleStudentList(rows);
-            else showNotification(t('dataInput.formatError'), 'error');
+            parseCourseListFile(rows);
+        } else {
+            // This case should ideally not be reached due to handleFileChange's detectFileType and activeTab check,
+            // but as a safeguard, we can notify if an unexpected tab is encountered.
+            showNotification(t('dataInput.formatError'), 'error');
         }
     };
 
 const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
         const reader = new FileReader();
         reader.onload = (event) => {
             const text = event.target?.result as string;
-            const actualType = detectFileType(text);
+            const detectedType = detectFileType(text);
 
-            // VALIDATION: Ensure the file type matches the current active tab
-            if (actualType !== activeTab) {
-                showNotification(`Tab Mismatch: You cannot upload ${actualType} file in ${activeTab} tab!`, 'error');
+            if (detectedType === 'unknown') {
+                showNotification(t('dataInput.unrecognizedFileFormat'), 'error');
+                e.target.value = '';
+                return;
+            }
+
+            if (detectedType !== activeTab) {
+                showNotification(t('dataInput.tabMismatchError', { detected: detectedType, active: activeTab }), 'error');
+                e.target.value = '';
                 return;
             }
 
             try {
-                const rows = text.split('\n').map(r => r.trim()).filter(r => r.length > 0);
-                const map = extractStudentMap(rows);
-                map.forEach((val, key) => tempStudentMap.current.set(key, val));
-                setStudentInfoStatus({ fileName: file.name, count: map.size });
+                processCSV(text);
+                showNotification(t('dataInput.fileProcessed', { type: activeTab }), 'success');
             } catch (err) {
-                showNotification("Import Error: Failed to process the CSV file.", 'error');
+                console.error("Error processing CSV:", err);
+                showNotification(t('dataInput.importError'), 'error');
             }
         };
         reader.readAsText(file);
