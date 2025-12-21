@@ -828,6 +828,7 @@ export function generateSchedule(
     students: Student[],
     constraints: GenerationConstraints
 ): ScheduleResult {
+    console.log('SCHEDULER INPUT CLASSROOMS:', JSON.stringify(classrooms, null, 2));
     const startTime = Date.now();
 
     // Validate input
@@ -1010,6 +1011,8 @@ export function generateSchedule(
         endTime: a.timeSlot.endTime,
         studentCount: a.studentCount
     }));
+
+    console.log('SCHEDULER OUTPUT SCHEDULE:', JSON.stringify(schedule, null, 2));
 
     return {
         success: true,

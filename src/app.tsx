@@ -40,7 +40,7 @@ const App: React.FC = () => {
       })));
 
       setClassrooms(savedClassrooms.map((r: any) => ({
-        id: r.name,
+        id: r.id.toString(),
         name: r.name,
         capacity: r.capacity,
         building: r.building

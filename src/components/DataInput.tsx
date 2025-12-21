@@ -290,9 +290,15 @@ export const DataInput: React.FC<DataInputProps> = ({
                 await window.api.clearCourses();
                 await window.api.clearClassrooms();
                 await window.api.clearStudents();
-                // 2. CLEAR THE SCHEDULE TOO (Logic addition)
-               await window.api.clearSchedule();
-               showNotification("All data and generated schedules have been wiped.", 'success');
+                await window.api.clearSchedule();
+
+                // 2. Update frontend state
+                setCourses([]);
+                setClassrooms([]);
+                setStudents([]);
+                setSchedule([]); // Assuming this setter is for the schedule data
+
+                showNotification("All data and generated schedules have been wiped.", 'success');
 
             } else if (type === 'courses') {
                 await window.api.clearCourses();
@@ -334,9 +340,10 @@ const handleAttendanceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // CONSTRAINT: Prevent import if Courses or Students tabs are empty
-        if (courses.length === 0 || students.length === 0) {
-            showNotification("Dependency Error: Please import Courses and Students first!", 'error');
+        // CONSTRAINT: Prevent import if Courses or Students (in-app or temporary) are missing
+        const studentsAvailable = students.length > 0 || tempStudentMap.current.size > 0;
+        if (courses.length === 0 || !studentsAvailable) {
+            showNotification("Dependency Error: Please import Courses and student information before importing attendance!", 'error');
             e.target.value = '';
             return;
         }
@@ -355,13 +362,17 @@ const handleAttendanceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 const rows = text.split('\n').map(r => r.trim()).filter(r => r.length > 0);
                 const map = extractAttendanceMap(rows);
                 
-                // Identify how many students in the file exist in our current database
-                const existingStudentIds = new Set(students.map(s => s.id.toUpperCase()));
+                // Combine students from app state and the temporary import buffer
+                const allAvailableStudentIds = new Set(students.map(s => s.id.toUpperCase()));
+                tempStudentMap.current.forEach((_name, id) => {
+                    allAvailableStudentIds.add(id.toUpperCase());
+                });
+
                 let matchCount = 0;
                 let skipCount = 0;
 
                 map.forEach((val, key) => {
-                    if (existingStudentIds.has(key.toUpperCase())) {
+                    if (allAvailableStudentIds.has(key.toUpperCase())) {
                         if (!tempAttendanceMap.current.has(key)) tempAttendanceMap.current.set(key, new Set());
                         val.forEach(c => tempAttendanceMap.current.get(key)?.add(c));
                         matchCount++;
@@ -372,9 +383,13 @@ const handleAttendanceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
                 if (matchCount > 0) {
                     setAttendanceStatus({ fileName: file.name, count: matchCount });
-                    showNotification(`Identified ${matchCount} valid students. Ignored ${skipCount} unknown students.`, 'success');
+                    if (skipCount > 0) {
+                        showNotification(`Identified ${matchCount} valid students. Ignored ${skipCount} unknown students.`, 'info');
+                    } else {
+                        showNotification(`Identified ${matchCount} valid students.`, 'success');
+                    }
                 } else {
-                    showNotification("Import Warning: No matching students found in the current database.", 'error');
+                    showNotification("Import Warning: No matching students found from the attendance file.", 'error');
                 }
             } catch (err) {
                 showNotification("Parse Error: Failed to analyze the attendance file.", 'error');
@@ -460,7 +475,7 @@ const handleAttendanceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     
 
     const parseCourseListFile = async (rows: string[]) => {
-        const newCourses: Course[] = [];
+        const newCourses: { id: string, code: string, name: string, enrolledStudents: number }[] = [];
 
         rows.forEach((row) => {
             if (row.includes("ALL OF THE COURSES") || !row.trim()) return;
@@ -471,40 +486,28 @@ const handleAttendanceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 code: code,
                 name: `Course ${code}`,
                 enrolledStudents: 0,
-
             });
         });
 
         if (newCourses.length > 0) {
             await window.api.addCoursesBulk(newCourses);
-            // Refresh from DB to be sure or just update state
-            const savedCourses = await window.api.getCourses();
-            // Map DB result to frontend type if needed, but they are similar.
-            // DB has `enrolled_students`, frontend `enrolledStudents`.
-            // We need to map it.
-            const mappedCourses = savedCourses.map((c: any) => ({
-                id: c.code, // Use code as ID for frontend consistency or c.id? Frontend uses string ID often.
-                // The current frontend uses `code` as `id` for courses often.
-                // Let's check `Course` type.
-                // In `types/index.ts` (not seen but inferred), `id` is likely string or number.
-                // In `DataInput.tsx` line 211: `id` is `code`.
-                // So let's keep using code as ID for now or map properly.
+            // After bulk adding, get the complete fresh list from the DB
+            const allSavedCourses = await window.api.getCourses();
+            // Map it correctly
+            const mappedCourses = allSavedCourses.map((c: any) => ({
+                id: c.code,
                 code: c.code,
                 name: c.name,
                 enrolledStudents: c.enrolled_students
             }));
-
-            setCourses(prev => {
-                const existingIds = new Set(prev.map(c => c.id));
-                const uniqueNew = mappedCourses.filter((c: any) => !existingIds.has(c.id));
-                return [...prev, ...uniqueNew];
-            });
+            // Replace the entire state
+            setCourses(mappedCourses);
             showNotification(t('dataInput.importedCourses', { count: newCourses.length }), 'success');
         }
     };
 
     const parseClassroomFile = async (rows: string[]) => {
-        const newRooms: Classroom[] = [];
+        const newRooms: { name: string; capacity: number; building: string }[] = [];
 
         rows.forEach((row) => {
             if (row.includes("ALL OF THE CLASSROOMS") || !row.trim()) return;
@@ -515,10 +518,8 @@ const handleAttendanceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 const capacity = parseInt(parts[1].trim(), 10);
 
                 newRooms.push({
-                    id: name,
                     name: name,
                     capacity: isNaN(capacity) ? 0 : capacity,
-
                     building: 'Main Hall'
                 });
             }
@@ -526,19 +527,17 @@ const handleAttendanceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
         if (newRooms.length > 0) {
             await window.api.addClassroomsBulk(newRooms);
-            const savedRooms = await window.api.getClassrooms();
-            const mappedRooms = savedRooms.map((r: any) => ({
-                id: r.name,
+            // After bulk adding, get the complete fresh list from the DB
+            const allSavedRooms = await window.api.getClassrooms();
+            // Map it correctly
+            const mappedRooms = allSavedRooms.map((r: any) => ({
+                id: r.id.toString(), // The correct mapping
                 name: r.name,
                 capacity: r.capacity,
                 building: r.building
             }));
-
-            setClassrooms(prev => {
-                const existingIds = new Set(prev.map(r => r.id));
-                const uniqueNew = mappedRooms.filter((r: any) => !existingIds.has(r.id));
-                return [...prev, ...uniqueNew];
-            });
+            // Replace the entire state, not just append
+            setClassrooms(mappedRooms);
             showNotification(t('dataInput.importedClassrooms', { count: newRooms.length }), 'success');
         }
     };

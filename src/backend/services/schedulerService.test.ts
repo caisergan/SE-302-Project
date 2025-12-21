@@ -514,3 +514,54 @@ describe('Scheduler - Validation', () => {
         expect(valResult.violations.length).toBeGreaterThan(0);
     });
 });
+
+// ============================================================================
+// 10. Split Logic Tests
+// ============================================================================
+
+describe('Scheduler - Split Logic', () => {
+    test('should split a large course across multiple rooms', () => {
+        const courses = [createCourse('C1', 150)];
+        const classrooms = [
+            createClassroom('R1', 100),
+            createClassroom('R2', 50),
+        ];
+        const students = Array.from({ length: 150 }, (_, i) => createStudent(`S${i}`, ['C1']));
+        const constraints = createConstraints();
+
+        const result = generateSchedule(courses, classrooms, students, constraints);
+
+        expect(result.success).toBe(true);
+        expect(result.schedule).toHaveLength(2); // One course split into two sessions
+
+        // Check that both rooms are used at the same time for the same course
+        expect(result.schedule[0].courseId).toBe('C1');
+        expect(result.schedule[1].courseId).toBe('C1');
+        expect(result.schedule[0].startTime.getTime()).toBe(result.schedule[1].startTime.getTime());
+        
+        const usedRoomIds = new Set(result.schedule.map(s => s.classroomId));
+        expect(usedRoomIds).toContain('R1');
+        expect(usedRoomIds).toContain('R2');
+    });
+
+    test('should not use non-existent classrooms when splitting', () => {
+        const courses = [createCourse('C-SPLIT-101', 120)];
+        const classrooms = [
+            createClassroom('REAL-ROOM-1', 80),
+            createClassroom('REAL-ROOM-2', 40),
+        ];
+        const students = Array.from({ length: 120 }, (_, i) => createStudent(`S${i}`, ['C-SPLIT-101']));
+        const constraints = createConstraints();
+
+        const result = generateSchedule(courses, classrooms, students, constraints);
+
+        expect(result.success).toBe(true);
+        expect(result.schedule.length).toBeGreaterThanOrEqual(2);
+
+        const originalClassroomIds = new Set(classrooms.map(c => c.id));
+
+        for (const session of result.schedule) {
+            expect(originalClassroomIds.has(session.classroomId)).toBe(true);
+        }
+    });
+});

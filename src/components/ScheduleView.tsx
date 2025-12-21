@@ -458,7 +458,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
                                     {(firstExam.classroomList || []).slice(0, 2).map((cr, idx) => (
                                       <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-orange-100 text-orange-700 border border-orange-200">
                                         {classrooms.find(r => r.id === cr.name)?.name || cr.name}
-                                        <span className="ml-1 opacity-75">({cr.count})</span>
+                                        <span className="ml-1 opacity-75">({cr.count} / {classrooms.find(r => r.id === cr.name)?.capacity || '?'})</span>
                                       </span>
                                     ))}
                                     {firstExam.classroomList && firstExam.classroomList.length > 2 && (
@@ -475,7 +475,11 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
                                     <div className="text-[10px] text-ieu-500 flex items-center gap-1 truncate">
                                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
                                       {room?.name}
-                                      {firstExam.studentCount ? <span className='opacity-75'>({firstExam.studentCount})</span> : null}
+                                      {firstExam.studentCount && room?.capacity ? (
+                                        <span className='opacity-75'>({firstExam.studentCount} / {room.capacity})</span>
+                                      ) : firstExam.studentCount ? (
+                                        <span className='opacity-75'>({firstExam.studentCount})</span>
+                                      ) : null}
                                     </div>
                                   )}
                                   {filterMode === 'room' && (
