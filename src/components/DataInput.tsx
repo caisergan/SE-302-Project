@@ -422,7 +422,7 @@ export const DataInput: React.FC<DataInputProps> = ({
     };
     
 
-    const handleEditClick = (item: Course | Classroom) => {
+    const handleEditClick = (item: Course | Classroom| Student) => {
         setEditingItem(item);
         setModalMode('edit');
         setIsModalOpen(true);
