@@ -17,7 +17,8 @@
         "confirm": "Confirm",
         "previousWeek": "Previous Week",
         "nextWeek": "Next Week",
-        "today": "Today"
+        "today": "Today",
+        "done": "Done"
     },
     "dashboard": {
         "title": "Dashboard",
@@ -90,8 +91,16 @@
         "building": "Building",
         "enrolledStudents": "Enrolled Students",
         "enrolledCourses": "Enrolled Courses",
-        "studentNameGenerated": "Name (Generated)",
-        "attendance": "Attendance List"
+        "studentNameGenerated": "Name",
+        "importStudentsTitle": "Import Student Data",
+        "importStudentsDesc": "Select the type of file you want to import:",
+        "importStudentInfo": "Student Information",
+        "importStudentInfoDesc": "Import a file containing student IDs and names (e.g., sampleData_AllStudents.csv)",
+        "importAttendance": "Attendance Data",
+        "importAttendanceDesc": "Import a file containing course-student enrollments (e.g., sampleData_AllAttendanceLists.csv)",
+        "importedStudents": "Imported {{count}} students.",
+        "searchPlaceholder": "Search {{tab}}...",
+        "noSearchResults": "No results found for \"{{query}}\""
     },
     "schedule": {
         "title": "Schedule View",
@@ -109,7 +118,11 @@
         "filterAll": "All",
         "filterRoom": "Room",
         "filterStudent": "Student",
-        "capacityShort": "Cap: {{capacity}}"
+        "capacityShort": "Cap: {{capacity}}",
+        "multipleExams": "{{count}} Exams",
+        "timeSlotDetails": "Time Slot Details",
+        "clickForDetails": "Click for details",
+        "enrolledCount": "Enrolled: {{count}}"
     },
     "settings": {
         "title": "Settings",
@@ -119,7 +132,11 @@
         "turkish": "Turkish",
         "theme": "Theme",
         "light": "Light",
-        "dark": "Dark"
+        "dark": "Dark",
+        "storage": "Storage",
+        "databaseLocation": "Database Location",
+        "databaseLocationDesc": "All your data is stored in this file",
+        "openLocation": "Show in folder"
     },
     "help": {
         "title": "Help Center",
@@ -139,7 +156,7 @@
         "constraint1": "A student cannot have two exams at the same time.",
         "constraint2": "Consecutive exams are prevented (optional).",
         "constraint3": "Room capacity cannot be exceeded.",
-        "constraint4":"There should be a one-hour break between exams.",
+        "constraint4": "There should be a one-hour break between exams.",
         "importTitle": "Importing Data",
         "importDesc": "Navigate to Data Management and use the relevant tabs to upload your files.",
         "coursesTab": "Courses Tab",
@@ -201,6 +218,13 @@
         "lastExamTime": "Last Exam Start Time",
         "timeWarning": "No exams will start after this time",
         "cancel": "Cancel",
-        "generate": "Generate Schedule"
+        "generate": "Generate Schedule",
+        "studentConstraints": "STUDENT CONSTRAINTS",
+        "maxExamsPerDay": "Max Exams Per Student Per Day",
+        "minHoursBetweenExams": "Minimum Hours Between Exams",
+        "noLimit": "No limit",
+        "noMinimum": "No minimum",
+        "hour": "hour",
+        "hours": "hours"
     }
 }

@@ -17,7 +17,8 @@
         "confirm": "Onayla",
         "previousWeek": "Önceki Hafta",
         "nextWeek": "Sonraki Hafta",
-        "today": "Bugün"
+        "today": "Bugün",
+        "done": "Tamam"
     },
     "dashboard": {
         "title": "Panel",
@@ -90,9 +91,14 @@
         "building": "Bina",
         "enrolledStudents": "Kayıtlı Öğrenciler",
         "enrolledCourses": "Kayıtlı Dersler",
-        "studentNameGenerated": "İsim (Oluşturulan)",
-        "attendance": "Yoklama Listesi"
-
+        "studentNameGenerated": "İsim",
+        "importStudentsTitle": "Öğrenci Verisi Aktar",
+        "importStudentsDesc": "İçe aktarmak istediğiniz dosya türünü seçin:",
+        "importStudentInfo": "Öğrenci Bilgileri",
+        "importStudentInfoDesc": "Öğrenci ID ve isimlerini içeren dosyayı içe aktarın (örn. sampleData_AllStudents.csv)",
+        "importAttendance": "Devam Verileri",
+        "importAttendanceDesc": "Ders-öğrenci kayıtlarını içeren dosyayı içe aktarın (örn. sampleData_AllAttendanceLists.csv)",
+        "importedStudents": "{{count}} öğrenci aktarıldı."
     },
     "schedule": {
         "title": "Program Görünümü",
@@ -110,7 +116,11 @@
         "filterAll": "Tümü",
         "filterRoom": "Sınıf",
         "filterStudent": "Öğrenci",
-        "capacityShort": "Kap: {{capacity}}"
+        "capacityShort": "Kapasite: {{kapasite}}",
+        "multipleExams": "{{count}} Sınav",
+        "timeSlotDetails": "Zaman Dilimi Detayları",
+        "clickForDetails": "Detaylar için tıklayın",
+        "enrolledCount": "Kayıtlı: {{count}}"
     },
     "settings": {
         "title": "Ayarlar",
@@ -120,7 +130,11 @@
         "turkish": "Türkçe",
         "theme": "Tema",
         "light": "Açık",
-        "dark": "Koyu"
+        "dark": "Koyu",
+        "storage": "Depolama",
+        "databaseLocation": "Veritabanı Konumu",
+        "databaseLocationDesc": "Tüm verileriniz bu dosyada saklanır",
+        "openLocation": "Klasörde göster"
     },
   "help": {
       "title": "Yardım Merkezi",
@@ -206,6 +220,10 @@
         "generate": "Program Oluştur",
         "studentConstraints": "ÖĞRENCİ KISITLAMALARI",
         "maxExamsPerDay": "Günlük Maksimum Sınav Sayısı",
-        "minHoursBetween": "Sınavlar Arası Minimum Süre"
+        "minHoursBetweenExams": "Sınavlar Arası Minimum Süre",
+        "noLimit": "Sınırsız",
+        "noMinimum": "Minimum Yok",
+        "hour": "saat",
+        "hours": "saat"
     }
 }

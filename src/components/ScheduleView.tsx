@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ExamSession, Course, Classroom, Student } from '../types';
+import { TimeSlotDetailModal } from './TimeSlotDetailModal';
 
 interface ScheduleViewProps {
   schedule: ExamSession[];
@@ -17,6 +18,11 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
   const [selectedEntityId, setSelectedEntityId] = useState<string>('');
   const [isExporting, setIsExporting] = useState(false);
   const [exportMessage, setExportMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Time slot detail modal state
+  const [showTimeSlotModal, setShowTimeSlotModal] = useState(false);
+  const [selectedTimeSlotExams, setSelectedTimeSlotExams] = useState<ExamSession[]>([]);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<{ start: Date; end: Date } | null>(null);
 
   // Initialize currentDate based on the first exam in the schedule, or today if schedule is empty
   const [currentDate, setCurrentDate] = useState<Date>(() => {
@@ -73,6 +79,36 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
       return false;
     });
   }, [schedule, filterMode, selectedEntityId, students]);
+
+  // Group sessions by time slot (sessions with the same start time)
+  const groupedSessionsByTimeSlot = useMemo(() => {
+    const groups = new Map<string, ExamSession[]>();
+
+    filteredSessions.forEach(session => {
+      const startTime = new Date(session.startTime);
+      // Create a key from the date and time
+      const key = startTime.toISOString();
+
+      if (!groups.has(key)) {
+        groups.set(key, []);
+      }
+      groups.get(key)!.push(session);
+    });
+
+    return groups;
+  }, [filteredSessions]);
+
+  // Handle time slot card click
+  const handleTimeSlotClick = (exams: ExamSession[]) => {
+    if (exams.length > 0) {
+      setSelectedTimeSlotExams(exams);
+      setSelectedTimeSlot({
+        start: new Date(exams[0].startTime),
+        end: new Date(exams[0].endTime),
+      });
+      setShowTimeSlotModal(true);
+    }
+  };
 
   const START_HOUR = 8;
   const END_HOUR = 22;
@@ -159,7 +195,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
                 key={m}
                 onClick={() => setFilterMode(m)}
                 className={`px-4 py-2 text-sm font-medium capitalize transition-colors whitespace-nowrap ${filterMode === m
-                  ? 'bg-indigo-600 text-white'
+                  ? 'bg-ieu-500 text-white'
                   : 'text-slate-600 hover:bg-slate-50'
                   }`}
               >
@@ -173,7 +209,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
               <select
                 value={selectedEntityId}
                 onChange={(e) => setSelectedEntityId(e.target.value)}
-                className="w-full appearance-none bg-white border border-slate-300 text-slate-700 py-2 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm truncate"
+                className="w-full appearance-none bg-white border border-slate-300 text-slate-700 py-2 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-ieu-500 focus:border-transparent shadow-sm truncate"
               >
                 {filterMode === 'room' && classrooms.map(r => (
                   <option key={r.id} value={r.id}>{r.name} ({t('schedule.capacityShort', { capacity: r.capacity })})</option>
@@ -257,7 +293,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
                 <div className="text-xs font-bold uppercase text-slate-500 mb-1">
                   {day.toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US', { weekday: 'short' })}
                 </div>
-                <div className={`text-sm font-bold w-8 h-8 mx-auto flex items-center justify-center rounded-full ${day.toDateString() === new Date().toDateString() ? 'bg-indigo-600 text-white' : 'text-slate-800'
+                <div className={`text-sm font-bold w-8 h-8 mx-auto flex items-center justify-center rounded-full ${day.toDateString() === new Date().toDateString() ? 'bg-ieu-500 text-white' : 'text-slate-800'
                   }`}>
                   {day.getDate()}
                 </div>
@@ -283,11 +319,12 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
                   <div key={i} className="border-b border-slate-100" style={{ height: `${HOUR_HEIGHT}px` }}></div>
                 ))}
 
-                {filteredSessions
-                  .filter(s => new Date(s.startTime).toDateString() === day.toDateString())
-                  .map(session => {
-                    const start = new Date(session.startTime);
-                    const end = new Date(session.endTime);
+                {/* Render grouped time slots */}
+                {Array.from(groupedSessionsByTimeSlot.entries())
+                  .filter(([key]) => new Date(key).toDateString() === day.toDateString())
+                  .map(([timeKey, examsInSlot]) => {
+                    const start = new Date(timeKey);
+                    const end = new Date(examsInSlot[0].endTime);
 
                     const startMinutes = (start.getHours() * 60 + start.getMinutes()) - (START_HOUR * 60);
                     const durationMinutes = (end.getTime() - start.getTime()) / (1000 * 60);
@@ -295,40 +332,78 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
                     const top = (startMinutes / 60) * HOUR_HEIGHT;
                     const height = (durationMinutes / 60) * HOUR_HEIGHT;
 
-                    const course = courses.find(c => c.id === session.courseId);
-                    const room = classrooms.find(r => r.id === session.classroomId);
+                    const isMultipleExams = examsInSlot.length > 1;
+                    const firstExam = examsInSlot[0];
+                    const course = courses.find(c => c.id === firstExam.courseId);
+                    const room = classrooms.find(r => r.id === firstExam.classroomId);
 
                     return (
                       <div
-                        key={session.id}
-                        className="absolute inset-x-1 rounded border-l-4 shadow-sm overflow-hidden hover:shadow-md transition-all hover:z-50 cursor-pointer group"
+                        key={timeKey}
+                        className="absolute inset-x-1 rounded border-l-4 shadow-sm overflow-hidden hover:shadow-md transition-all cursor-pointer group"
                         style={{
                           top: `${top}px`,
                           height: `${height}px`,
-                          backgroundColor: 'rgba(239, 246, 255, 0.95)',
-                          borderColor: '#6366f1',
+                          backgroundColor: isMultipleExams ? 'rgba(219, 234, 254, 0.98)' : 'rgba(239, 246, 255, 0.95)',
+                          borderColor: isMultipleExams ? '#3b82f6' : '#6366f1',
                           borderWidth: '1px',
                           borderLeftWidth: '4px'
                         }}
+                        onClick={() => handleTimeSlotClick(examsInSlot)}
                       >
                         <div className="p-2 h-full flex flex-col">
-                          <div className="text-xs font-bold text-indigo-900 truncate">
-                            {course?.code}
-                          </div>
-                          <div className="text-[10px] text-indigo-700 font-medium truncate leading-tight">
-                            {course?.name}
-                          </div>
-                          {filterMode !== 'room' && (
-                            <div className="mt-auto pt-1 text-[10px] text-indigo-500 flex items-center gap-1 truncate">
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
-                              {room?.name}
-                            </div>
-                          )}
-                          {filterMode === 'room' && (
-                            <div className="mt-auto pt-1 text-[10px] text-indigo-500 flex items-center gap-1 truncate">
-                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-                              {course?.enrolledStudents}
-                            </div>
+                          {isMultipleExams ? (
+                            /* Multiple exams - show count and summary */
+                            <>
+                              <div className="flex items-center gap-1 mb-1">
+                                <div className="bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                                  {examsInSlot.length}
+                                </div>
+                                <span className="text-xs font-bold text-blue-900">
+                                  {t('schedule.multipleExams', { count: examsInSlot.length })}
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-blue-700 font-medium leading-tight space-y-0.5 overflow-hidden flex-1">
+                                {examsInSlot.slice(0, 2).map(exam => (
+                                  <div key={exam.id} className="truncate">
+                                    • {courses.find(c => c.id === exam.courseId)?.code || exam.courseId}
+                                  </div>
+                                ))}
+                                {examsInSlot.length > 2 && (
+                                  <div className="truncate text-blue-500">+{examsInSlot.length - 2} more...</div>
+                                )}
+                              </div>
+                              <div className="mt-auto pt-1 text-[10px] text-blue-500 flex items-center gap-1">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <circle cx="12" cy="12" r="10" />
+                                  <path d="M12 16v-4" />
+                                  <path d="M12 8h.01" />
+                                </svg>
+                                {t('schedule.clickForDetails') || 'Click for details'}
+                              </div>
+                            </>
+                          ) : (
+                            /* Single exam - show details directly */
+                            <>
+                              <div className="text-xs font-bold text-ieu-800 truncate">
+                                {course?.code}
+                              </div>
+                              <div className="text-[10px] text-ieu-600 font-medium truncate leading-tight">
+                                {course?.name}
+                              </div>
+                              {filterMode !== 'room' && (
+                                <div className="mt-auto pt-1 text-[10px] text-ieu-500 flex items-center gap-1 truncate">
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                                  {room?.name}
+                                </div>
+                              )}
+                              {filterMode === 'room' && (
+                                <div className="mt-auto pt-1 text-[10px] text-ieu-500 flex items-center gap-1 truncate">
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+                                  {course?.enrolledStudents}
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
@@ -339,6 +414,16 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
           </div>
         </div>
       </div>
+
+      {/* Time Slot Detail Modal */}
+      <TimeSlotDetailModal
+        isOpen={showTimeSlotModal}
+        onClose={() => setShowTimeSlotModal(false)}
+        exams={selectedTimeSlotExams}
+        courses={courses}
+        classrooms={classrooms}
+        timeSlot={selectedTimeSlot}
+      />
     </div>
   );
 };

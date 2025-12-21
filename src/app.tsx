@@ -22,38 +22,58 @@ const App: React.FC = () => {
   const [showConstraintModal, setShowConstraintModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const savedCourses = await window.api.getCourses();
-        const savedClassrooms = await window.api.getClassrooms();
-        const savedStudents = await window.api.getStudents();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
 
-        setCourses(savedCourses.map((c: any) => ({
-          id: c.code,
-          code: c.code,
-          name: c.name,
-          enrolledStudents: c.enrolled_students
-        })));
+  // Function to load data from the backend
+  const loadData = async () => {
+    try {
+      const savedCourses = await window.api.getCourses();
+      const savedClassrooms = await window.api.getClassrooms();
+      const savedStudents = await window.api.getStudents();
 
-        setClassrooms(savedClassrooms.map((r: any) => ({
-          id: r.name,
-          name: r.name,
-          capacity: r.capacity,
-          building: r.building
-        })));
+      setCourses(savedCourses.map((c: any) => ({
+        id: c.code,
+        code: c.code,
+        name: c.name,
+        enrolledStudents: c.enrolled_students
+      })));
 
-        setStudents(savedStudents.map((s: any) => ({
-          id: s.student_number,
-          name: s.name,
-          email: `${s.student_number.toLowerCase()}@uni.edu`,
-          enrolledCourses: s.enrolled_courses
-        })));
-      } catch (error) {
-        console.error("Failed to load data:", error);
+      setClassrooms(savedClassrooms.map((r: any) => ({
+        id: r.name,
+        name: r.name,
+        capacity: r.capacity,
+        building: r.building
+      })));
+
+      setStudents(savedStudents.map((s: any) => ({
+        id: s.student_number,
+        name: s.name,
+        email: `${s.student_number.toLowerCase()}@uni.edu`,
+        enrolledCourses: s.enrolled_courses
+      })));
+
+      // Load saved schedule from database
+      const savedScheduleResult = await window.api.loadSchedule();
+      if (savedScheduleResult.success && savedScheduleResult.sessions.length > 0) {
+        const loadedSchedule = savedScheduleResult.sessions.map((s: any) => ({
+          id: s.session_id,
+          courseId: s.course_code,
+          classroomId: s.classroom_name,
+          startTime: new Date(s.start_time),
+          endTime: new Date(s.end_time),
+        }));
+        setSchedule(loadedSchedule);
+        setIsGenerated(true);
+        console.log(`Loaded ${loadedSchedule.length} saved exam sessions from database.`);
       }
-    };
+    } catch (error) {
+      console.error("Failed to load data:", error);
+    }
+  };
 
+  // Initial data load on mount
+  useEffect(() => {
     loadData();
 
     const handleNavigate = (event: CustomEvent) => {
@@ -75,8 +95,12 @@ const App: React.FC = () => {
     };
   }, []);
 
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generationError, setGenerationError] = useState<string | null>(null);
+  // Auto-refresh data when switching to Data Management tab
+  useEffect(() => {
+    if (currentView === ViewMode.DATA) {
+      loadData();
+    }
+  }, [currentView]);
 
   const handleGenerateSchedule = () => {
     setShowConstraintModal(true);
@@ -206,7 +230,7 @@ const App: React.FC = () => {
             </h1>
             <button
               onClick={() => setShowHelpModal(true)}
-              className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+              className="p-2 text-slate-500 hover:text-ieu-500 hover:bg-ieu-50 rounded-lg transition-colors"
               title={t('help.title') || 'Help'}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -225,8 +249,8 @@ const App: React.FC = () => {
             />
           )}
 
-          <HelpModal 
-            isOpen={showHelpModal} 
+          <HelpModal
+            isOpen={showHelpModal}
             onClose={() => setShowHelpModal(false)}
             currentView={currentView}
           />

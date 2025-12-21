@@ -5,12 +5,36 @@ import { MakerDeb } from '@electron-forge/maker-deb';
 import { MakerRpm } from '@electron-forge/maker-rpm';
 import { MakerDMG } from '@electron-forge/maker-dmg';
 import { VitePlugin } from '@electron-forge/plugin-vite';
+import { AutoUnpackNativesPlugin } from '@electron-forge/plugin-auto-unpack-natives';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
+import fs from 'fs';
+import path from 'path';
 
 const config: ForgeConfig = {
   packagerConfig: {
-    asar: true,
+    icon: './src/assets/logo',
+    asar: {
+      unpack: '**/node_modules/better-sqlite3/**',
+    },
+  },
+  hooks: {
+    packageAfterCopy: async (config, buildPath) => {
+      const modules = ['better-sqlite3', 'bindings', 'file-uri-to-path'];
+      for (const module of modules) {
+        const src = path.join(__dirname, 'node_modules', module);
+        const dest = path.join(buildPath, 'node_modules', module);
+        if (!fs.existsSync(path.join(buildPath, 'node_modules'))) {
+          fs.mkdirSync(path.join(buildPath, 'node_modules'));
+        }
+        if (fs.existsSync(src)) {
+          fs.cpSync(src, dest, { recursive: true });
+          console.log(`Copied ${module} to build path`);
+        } else {
+          console.warn(`Could not find ${module} to copy`);
+        }
+      }
+    },
   },
   rebuildConfig: {},
   makers: [
@@ -33,6 +57,7 @@ const config: ForgeConfig = {
     new MakerDeb({}),
   ],
   plugins: [
+    new AutoUnpackNativesPlugin({}),
     new VitePlugin({
       // `build` can specify multiple entry builds, which can be Main process, Preload scripts, Worker process, etc.
       // If you are familiar with Vite configuration, it will look really familiar.
@@ -65,7 +90,7 @@ const config: ForgeConfig = {
       [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
       [FuseV1Options.EnableNodeCliInspectArguments]: false,
       [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
-      [FuseV1Options.OnlyLoadAppFromAsar]: true,
+      [FuseV1Options.OnlyLoadAppFromAsar]: false,
     }),
   ],
 };

@@ -1,4 +1,6 @@
-export { };
+declare module '*.png';
+declare module '*.ico';
+declare module '*.svg';
 
 interface ScheduleResult {
     success: boolean;
