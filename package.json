@@ -1,7 +1,7 @@
 {
   "name": "schedulr",
   "productName": "SchedulR",
-  "version": "1.0.3",
+  "version": "1.1.3",
   "description": "Desktop application for automated exam scheduling",
   "main": ".vite/build/main.js",
   "scripts": {

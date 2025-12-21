@@ -51,4 +51,5 @@ db.exec(`
 `);
 
 export default db;
+export { dbPath };
 

@@ -24,6 +24,10 @@ contextBridge.exposeInMainWorld('api', {
     hasSchedule: () => ipcRenderer.invoke('has-schedule'),
     clearSchedule: () => ipcRenderer.invoke('clear-schedule'),
     exportScheduleCSV: (data: any) => ipcRenderer.invoke('export-schedule-csv', data),
+
+    // Settings API
+    getDbPath: () => ipcRenderer.invoke('get-db-path'),
+    openDbLocation: () => ipcRenderer.invoke('open-db-location'),
 });
 
 

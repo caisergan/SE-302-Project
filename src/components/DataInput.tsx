@@ -16,8 +16,8 @@ interface DataInputProps {
 type Tab = 'courses' | 'classrooms' | 'students'|'enrollments';
 
 interface EditModalProps {
-    item: Course | Classroom;
-    type: 'courses' | 'classrooms';
+    item: any;
+    type: Tab;
     mode: 'add' | 'edit';
     onClose: () => void;
     onSave: (updatedItem: any) => void;
@@ -26,8 +26,6 @@ interface EditModalProps {
 const EditModal: React.FC<EditModalProps> = ({ item, type, mode, onClose, onSave }) => {
     const { t } = useTranslation();
     const [formData, setFormData] = useState<any>({ ...item });
-
-    const isCourse = type === 'courses';
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value, type: inputType } = e.target;
@@ -47,79 +45,127 @@ const EditModal: React.FC<EditModalProps> = ({ item, type, mode, onClose, onSave
         }));
     };
 
-
-
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         const finalData = { ...formData };
-        if (!isCourse && (typeof finalData.capacity !== 'number' || isNaN(finalData.capacity))) {
+        if (type === 'classrooms' && (typeof finalData.capacity !== 'number' || isNaN(finalData.capacity))) {
             finalData.capacity = 0;
         }
         onSave(finalData);
+    };
+
+    const renderFormContent = () => {
+        switch (type) {
+            case 'courses':
+                return (
+                    <>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">{t('dataInput.courseCode')}</label>
+                            <input required type="text" name="code" value={formData.code} onChange={handleChange} className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">{t('dataInput.courseName')}</label>
+                            <input required type="text" name="name" value={formData.name} onChange={handleChange} className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">{t('dataInput.enrolledStudents')}</label>
+                            <input
+                                type="text"
+                                name="enrolledStudents"
+                                value={formData.enrolledStudents || 0}
+                                readOnly
+                                className="w-full rounded-lg border-slate-200 border px-3 py-2 bg-slate-100 text-slate-500 focus:outline-none cursor-not-allowed"
+                            />
+                            <p className="text-xs text-slate-400 mt-1">{t('dataInput.calculatedAutomatically')}</p>
+                        </div>
+                    </>
+                );
+            case 'classrooms':
+                return (
+                    <>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">{t('dataInput.roomName')}</label>
+                            <input required type="text" name="name" value={formData.name} onChange={handleChange} className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">{t('dataInput.building')}</label>
+                            <input type="text" name="building" value={formData.building} onChange={handleChange} className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">{t('dataInput.capacity')}</label>
+                            <input
+                                required
+                                type="text"
+                                name="capacity"
+                                value={formData.capacity}
+                                onChange={handleChange}
+                                className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none"
+                            />
+                        </div>
+                    </>
+                );
+            case 'students':
+                return (
+                    <>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">{t('dataInput.studentId')}</label>
+                            <input 
+                                required 
+                                type="text" 
+                                name="id" 
+                                value={formData.id} 
+                                onChange={handleChange} 
+                                placeholder="Ex: 2023001"
+                                className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none" 
+                                readOnly={mode === 'edit'} 
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">{t('dataInput.studentNameGenerated')}</label>
+                            <input 
+                                required 
+                                type="text" 
+                                name="name" 
+                                value={formData.name} 
+                                onChange={handleChange} 
+                                placeholder="Name Surname"
+                                className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none" 
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">{t('dataInput.email')}</label>
+                            <input 
+                                type="email" 
+                                name="email" 
+                                value={formData.email} 
+                                onChange={handleChange} 
+                                placeholder="student@uni.edu"
+                                className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none" 
+                            />
+                        </div>
+                    </>
+                );
+            default:
+                return null;
+        }
     };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100">
                 <div className="px-6 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-                    <h3 className="font-bold text-slate-800">
-                        {mode === 'add' ? t('dataInput.addNew') : t('common.edit')} {isCourse ? t('dataInput.courses') : t('dataInput.classrooms')}
+                    <h3 className="font-bold text-slate-800 capitalize">
+                        {mode === 'add' ? t('dataInput.addNew') : t('common.edit')} {t(`dataInput.${type}`)}
                     </h3>
                     <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                     </button>
                 </div>
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    {isCourse ? (
-                        <>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">{t('dataInput.courseCode')}</label>
-                                <input type="text" name="code" value={formData.code} onChange={handleChange} className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">{t('dataInput.courseName')}</label>
-                                <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none" />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">{t('dataInput.enrolledStudents')}</label>
-                                <input
-                                    type="text"
-                                    name="enrolledStudents"
-                                    value={formData.enrolledStudents}
-                                    readOnly
-                                    className="w-full rounded-lg border-slate-200 border px-3 py-2 bg-slate-100 text-slate-500 focus:outline-none cursor-not-allowed"
-                                />
-                                <p className="text-xs text-slate-400 mt-1">{t('dataInput.calculatedAutomatically')}</p>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">{t('dataInput.roomName')}</label>
-                                <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">{t('dataInput.building')}</label>
-                                <input type="text" name="building" value={formData.building} onChange={handleChange} className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">{t('dataInput.capacity')}</label>
-                                <input
-                                    type="text"
-                                    name="capacity"
-                                    value={formData.capacity}
-                                    onChange={handleChange}
-                                    className="w-full rounded-lg border-slate-300 border px-3 py-2 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none"
-                                />
-                            </div>
-
-                        </>
-                    )}
-
+                    {renderFormContent()}
                     <div className="pt-4 flex gap-3 justify-end">
                         <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">{t('common.cancel')}</button>
-                        <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm">{mode === 'add' ? t('common.save') : t('common.save')}</button>
+                        <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm">{t('common.save')}</button>
                     </div>
                 </form>
             </div>
@@ -167,13 +213,12 @@ const StudentImportModal: React.FC<StudentImportModalProps> = ({
                         {t('dataInput.importStudentsDesc') || 'Select the type of file you want to import:'}
                     </p>
 
-                    {/* Student Info Card */}
                     <div
                         className={`border rounded-lg p-4 cursor-pointer transition-all group ${studentInfoStatus ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50'}`}
                         onClick={onSelectStudentInfo}
                     >
                         <div className="flex items-start gap-4">
-                            <div className={`p-3 rounded-lg transition-colors ${studentInfoStatus ? 'bg-indigo-200 text-indigo-700' : 'bg-indigo-100 text-indigo-600 group-hover:bg-indigo-200'}`}>
+                            <div className={`p-3 rounded-lg transition-colors ${studentInfoStatus ? 'bg-indigo-200 text-indigo-600' : 'bg-indigo-100 text-indigo-500 group-hover:bg-indigo-200'}`}>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                                     <circle cx="9" cy="7" r="4" />
@@ -187,12 +232,12 @@ const StudentImportModal: React.FC<StudentImportModalProps> = ({
                                 </h4>
                                 <p className="text-sm text-slate-500">
                                     {studentInfoStatus
-                                        ? <span>{studentInfoStatus.fileName} <br /><span className="font-medium text-indigo-700">{studentInfoStatus.count} records found</span></span>
-                                        : (t('dataInput.importStudentInfoDesc') || 'Import a file containing student IDs and names (e.g., realData_AllStudents.csv)')
+                                        ? <span>{studentInfoStatus.fileName} <br /><span className="font-medium text-indigo-600">{studentInfoStatus.count} records found</span></span>
+                                        : (t('dataInput.importStudentInfoDesc') || 'Import a file containing student IDs (e.g., realData_AllStudents.csv)')
                                     }
                                 </p>
                             </div>
-                            <div className={`transition-colors ${studentInfoStatus ? 'text-indigo-600' : 'text-slate-400 group-hover:text-indigo-500'}`}>
+                            <div className={`transition-colors ${studentInfoStatus ? 'text-indigo-500' : 'text-slate-400 group-hover:text-indigo-500'}`}>
                                 {studentInfoStatus ? (
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                                 ) : (
@@ -202,7 +247,6 @@ const StudentImportModal: React.FC<StudentImportModalProps> = ({
                         </div>
                     </div>
 
-                    {/* Attendance Card */}
                     <div
                         className={`border rounded-lg p-4 cursor-pointer transition-all group ${attendanceStatus ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/50'}`}
                         onClick={onSelectAttendance}
@@ -251,6 +295,8 @@ const StudentImportModal: React.FC<StudentImportModalProps> = ({
     );
 };
 
+
+
 export const DataInput: React.FC<DataInputProps> = ({
     courses, setCourses, classrooms, setClassrooms, students, setStudents
 }) => {
@@ -265,7 +311,7 @@ export const DataInput: React.FC<DataInputProps> = ({
     const studentInfoFileInputRef = useRef<HTMLInputElement>(null);
     const attendanceFileInputRef = useRef<HTMLInputElement>(null);
 
-    const [editingItem, setEditingItem] = useState<Course | Classroom | null>(null);
+    const [editingItem, setEditingItem] = useState<any>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState<'add' | 'edit'>('edit');
     const [isClearMenuOpen, setIsClearMenuOpen] = useState(false);
@@ -424,53 +470,68 @@ const handleAttendanceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     };
     
 
-    const handleEditClick = (item: Course | Classroom) => {
+    const handleEditClick = (item: Course | Classroom| Student) => {
         setEditingItem(item);
         setModalMode('edit');
         setIsModalOpen(true);
     };
 
     const handleAddClick = () => {
-        if (activeTab === 'students') return;
-
         setModalMode('add');
         if (activeTab === 'courses') {
             setEditingItem({ id: '', code: '', name: '', enrolledStudents: 0 });
         } else if (activeTab === 'classrooms') {
             setEditingItem({ id: '', name: '', capacity: 0, building: '' });
+        } else if (activeTab === 'students') {
+            setEditingItem({ id: '', name: '', email: '', enrolledCourses: [] });
         }
         setIsModalOpen(true);
     };
 
     const handleSaveItem = async (updatedItem: any) => {
-        if (activeTab === 'courses') {
-            if (modalMode === 'add') {
-                const newItem = { ...updatedItem, id: updatedItem.code };
-                // For single add, we might want a single add API, but for now let's use bulk or just update local state?
-                // The user asked to fix "Imported data", but manual add should probably also persist.
-                // The current plan focused on Import. Let's stick to fixing Import first, but ideally we should fix manual add too.
-                // However, the current `addCourse` in preload only takes `course`.
-                // Let's assume for now we just update state for manual add, or better, call the API if available.
-                // `window.api.addCourse` exists.
-                await window.api.addCourse(newItem);
-                setCourses(prev => [...prev, newItem]);
-            } else {
-                // Update not implemented in backend yet for single item update.
-                // Just update local state for now.
-                setCourses(prev => prev.map(c => c.id === updatedItem.id ? updatedItem : c));
+        try {
+            if (activeTab === 'courses') {
+                if (modalMode === 'add') {
+                    const newItem = { ...updatedItem, id: updatedItem.code };
+                    await window.api.addCourse(newItem);
+                    setCourses(prev => [...prev, newItem]);
+                } else {
+                    setCourses(prev => prev.map(c => c.id === updatedItem.id ? updatedItem : c));
+                }
+            } else if (activeTab === 'classrooms') {
+                if (modalMode === 'add') {
+                    const newItem = { ...updatedItem, id: updatedItem.name };
+                    await window.api.addClassroomsBulk([newItem]);
+                    setClassrooms(prev => [...prev, newItem]);
+                } else {
+                    setClassrooms(prev => prev.map(c => c.id === updatedItem.id ? updatedItem : c));
+                }
+            } else if (activeTab === 'students') {
+                if (modalMode === 'add') {
+                    const newItem = {
+                        ...updatedItem,
+                        email: updatedItem.email || `${updatedItem.id.toLowerCase()}@uni.edu`,
+                        enrolledCourses: []
+                    };
+                    await window.api.addStudentsBulk([
+                        {
+                            studentNumber: newItem.id,
+                            name: newItem.name,
+                            enrolledCourses: []
+                        }
+                    ]);
+                    setStudents(prev => [...prev, newItem]);
+                    showNotification(t('dataInput.studentAdded', 'Student added successfully'), 'success');
+                } else {
+                    setStudents(prev => prev.map(s => s.id === updatedItem.id ? updatedItem : s));
+                }
             }
-        } else if (activeTab === 'classrooms') {
-            if (modalMode === 'add') {
-                const newItem = { ...updatedItem, id: updatedItem.name };
-                // No single add API for classrooms yet in my plan, but I can use bulk with 1 item.
-                await window.api.addClassroomsBulk([newItem]);
-                setClassrooms(prev => [...prev, newItem]);
-            } else {
-                setClassrooms(prev => prev.map(c => c.id === updatedItem.id ? updatedItem : c));
-            }
+            setIsModalOpen(false);
+            setEditingItem(null);
+        } catch (error) {
+            console.error("Save error:", error);
+            showNotification("Failed to save item", 'error');
         }
-        setIsModalOpen(false);
-        setEditingItem(null);
     };
     
 
@@ -479,7 +540,6 @@ const handleAttendanceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
         rows.forEach((row) => {
             if (row.includes("ALL OF THE COURSES") || !row.trim()) return;
-
             const code = row.trim();
             newCourses.push({
                 id: code,
@@ -488,7 +548,6 @@ const handleAttendanceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 enrolledStudents: 0,
             });
         });
-
         if (newCourses.length > 0) {
             await window.api.addCoursesBulk(newCourses);
             // After bulk adding, get the complete fresh list from the DB
@@ -511,7 +570,6 @@ const handleAttendanceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
         rows.forEach((row) => {
             if (row.includes("ALL OF THE CLASSROOMS") || !row.trim()) return;
-
             const parts = row.split(';');
             if (parts.length >= 2) {
                 const name = parts[0].trim();
@@ -524,7 +582,6 @@ const handleAttendanceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 });
             }
         });
-
         if (newRooms.length > 0) {
             await window.api.addClassroomsBulk(newRooms);
             // After bulk adding, get the complete fresh list from the DB
@@ -579,11 +636,9 @@ const handleAttendanceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const extractAttendanceMap = (rows: string[]): Map<string, Set<string>> => {
         const map = new Map<string, Set<string>>();
         let currentCourseCode = '';
-
         rows.forEach(row => {
             const cleanRow = row.trim();
             if (!cleanRow) return;
-
             if (cleanRow.startsWith('[')) {
                 if (!currentCourseCode) return;
                 const content = cleanRow.slice(1, -1);
@@ -639,16 +694,11 @@ const handleAttendanceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 enrolledStudents: c.enrolled_students
             }));
             setCourses(mappedCourses);
-
             showNotification(t('dataInput.importedStudents', { count: newStudents.length }), 'success');
-        } else {
-            // Maybe show error if nothing to save?
-            // But if they clicked Done with nothing, maybe just close.
         }
         setIsStudentImportModalOpen(false);
     };
 
-    // --- Parsing Wrappers for ProcessCSV (Legacy/Direct) ---
 
     // Updated to use the correct logic but immediately save (same behavior as before but cleaner)
     const parseSimpleStudentList = async (rows: string[]): Promise<number> => {
@@ -761,30 +811,19 @@ const handleAttendanceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         }
     };
 
+    
     const processCSV = (text: string) => {
         const rows = text.split('\n').map(r => r.trim()).filter(r => r.length > 0);
         if (rows.length === 0) return;
 
         if (activeTab === 'classrooms') {
-            if (text.includes(';') || rows[0].includes('CLASSROOMS')) {
-                parseClassroomFile(rows);
-            } else {
-                showNotification(t('dataInput.formatError'), 'error');
-            }
+            parseClassroomFile(rows);
         } else if (activeTab === 'courses') {
-            if (rows[0].includes('COURSES IN THE SYSTEM') || rows.some(r => r.startsWith('CourseCode_'))) {
-                parseCourseListFile(rows);
-            } else {
-                showNotification(t('dataInput.formatError'), 'error');
-            }
-        } else if (activeTab === 'students') {
-            if (text.includes('[') && text.includes(']')) {
-                parseStudentAttendanceFile(rows);
-            } else if (rows[0].includes('ALL OF THE STUDENTS') || rows.some(r => r.startsWith('Std_ID_'))) {
-                parseSimpleStudentList(rows);
-            } else {
-                showNotification(t('dataInput.formatError'), 'error');
-            }
+            parseCourseListFile(rows);
+        } else {
+            // This case should ideally not be reached due to handleFileChange's detectFileType and activeTab check,
+            // but as a safeguard, we can notify if an unexpected tab is encountered.
+            showNotification(t('dataInput.formatError'), 'error');
         }
     };
 
@@ -795,18 +834,26 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const reader = new FileReader();
         reader.onload = (event) => {
             const text = event.target?.result as string;
-            const actualType = detectFileType(text);
+            const detectedType = detectFileType(text);
 
-            // VALIDATION: Ensure the file type matches the current active tab
-            if (actualType !== activeTab) {
-                showNotification(`Tab Mismatch: You cannot upload ${actualType} file in ${activeTab} tab!`, 'error');
+            if (detectedType === 'unknown') {
+                showNotification(t('dataInput.unrecognizedFileFormat'), 'error');
+                e.target.value = '';
+                return;
+            }
+
+            if (detectedType !== activeTab) {
+                showNotification(t('dataInput.tabMismatchError', { detected: detectedType, active: activeTab }), 'error');
+                e.target.value = '';
                 return;
             }
 
             try {
                 processCSV(text);
+                showNotification(t('dataInput.fileProcessed', { type: activeTab }), 'success');
             } catch (err) {
-                showNotification("Import Error: Failed to process the CSV file.", 'error');
+                console.error("Error processing CSV:", err);
+                showNotification(t('dataInput.importError'), 'error');
             }
         };
         reader.readAsText(file);
@@ -976,13 +1023,8 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                                 <tr key={c.id} className="bg-white border-b hover:bg-slate-50">
                                     <td className="px-6 py-4 font-medium text-slate-900">{c.code}</td>
                                     <td className="px-6 py-4">{c.name}</td>
-
                                     <td className="px-6 py-4">{c.enrolledStudents}</td>
-                                    <td className="px-6 py-4 text-indigo-600 hover:underline cursor-pointer"
-                                        onClick={() => handleEditClick(c)}
-                                    >
-                                        {t('common.edit')}
-                                    </td>
+                                    <td className="px-6 py-4 text-indigo-600 hover:underline cursor-pointer" onClick={() => handleEditClick(c)}>{t('common.edit')}</td>
                                 </tr>
                             ))}
                             {filteredCourses.length === 0 && (
@@ -1064,6 +1106,7 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                                     <th className="px-6 py-3 bg-slate-50">{t('dataInput.studentNameGenerated')}</th>
                                     <th className="px-6 py-3 bg-slate-50">{t('dataInput.email')}</th>
                                     <th className="px-6 py-3 bg-slate-50">{t('dataInput.enrolledCourses')}</th>
+                                    <th className="px-6 py-3 bg-slate-50">{t('common.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1076,18 +1119,13 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                                             {s.enrolledCourses.length > 0 ? (
                                                 <div className="flex flex-wrap gap-1">
                                                     {s.enrolledCourses.slice(0, 3).map(c => (
-                                                        <span key={c} className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs border border-indigo-100">
-                                                            {c}
-                                                        </span>
+                                                        <span key={c} className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs border border-indigo-100">{c}</span>
                                                     ))}
-                                                    {s.enrolledCourses.length > 3 && (
-                                                        <span className="text-xs text-slate-400 self-center">+{s.enrolledCourses.length - 3} more</span>
-                                                    )}
+                                                    {s.enrolledCourses.length > 3 && (<span className="text-xs text-slate-400 self-center">+{s.enrolledCourses.length - 3} more</span>)}
                                                 </div>
-                                            ) : (
-                                                <span className="text-slate-400 italic">None</span>
-                                            )}
+                                            ) : (<span className="text-slate-400 italic">None</span>)}
                                         </td>
+                                        <td className="px-6 py-4 text-indigo-600 hover:underline cursor-pointer" onClick={() => handleEditClick(s)}>{t('common.edit')}</td>
                                     </tr>
                                 ))}
                                 {filteredStudents.length === 0 && (
@@ -1113,10 +1151,10 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
     return (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full relative">
-            {isModalOpen && editingItem && (activeTab === 'courses' || activeTab === 'classrooms') && (
+            {isModalOpen && editingItem && (
                 <EditModal
                     item={editingItem}
-                    type={activeTab as 'courses' | 'classrooms'}
+                    type={activeTab}
                     mode={modalMode}
                     onClose={() => setIsModalOpen(false)}
                     onSave={handleSaveItem}
@@ -1196,14 +1234,10 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
                 <div className="flex gap-2">
                     <div className="relative">
-                        <button
-                            onClick={() => setIsClearMenuOpen(!isClearMenuOpen)}
-                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
-                        >
+                        <button onClick={() => setIsClearMenuOpen(!isClearMenuOpen)} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>
                             {t('dataInput.clearData')}
                         </button>
-
                         {isClearMenuOpen && (
                             <>
                                 <div className="fixed inset-0 z-40" onClick={() => setIsClearMenuOpen(false)}></div>
@@ -1217,21 +1251,11 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                             </>
                         )}
                     </div>
-                    <button
-                        onClick={handleImportClick}
-                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
-                    >
+                    <button onClick={handleImportClick} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" x2="12" y1="3" y2="15" /></svg>
                         {t('dataInput.importFile')}
                     </button>
-                    <button
-                        onClick={handleAddClick}
-                        disabled={activeTab === 'students'}
-                        className={`flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg shadow-sm transition-colors ${activeTab === 'students'
-                            ? 'bg-slate-300 cursor-not-allowed'
-                            : 'bg-indigo-600 hover:bg-indigo-700'
-                            }`}
-                    >
+                    <button onClick={handleAddClick} className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" x2="12" y1="5" y2="19" /><line x1="5" x2="19" y1="12" y2="12" /></svg>
                         {t('dataInput.addNew')}
                     </button>
@@ -1240,22 +1264,13 @@ const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 
             <div className="flex border-b border-slate-200 shrink-0">
                 {(['courses', 'classrooms', 'students'] as Tab[]).map((tab) => (
-                    <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`px-6 py-3 text-sm font-medium capitalize focus:outline-none ${activeTab === tab
-                            ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50'
-                            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-                            }`}
-                    >
-                        {t(`dataInput.${tab}`)}
-                    </button>
+                    <button key={tab} onClick={() => setActiveTab(tab)} className={`px-6 py-3 text-sm font-medium capitalize focus:outline-none ${activeTab === tab ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50/50' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}>{t(`dataInput.${tab}`)}</button>
                 ))}
             </div>
 
             <div className="flex-1 overflow-hidden relative flex flex-col">
                 {renderTable()}
             </div>
-        </div >
+        </div>
     );
 };

@@ -1,5 +1,6 @@
 import React from 'react';
 import { ViewMode } from '../types';
+import logo from '../assets/logo.png';
 
 interface SidebarProps {
   currentView: ViewMode;
@@ -28,7 +29,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
     <div className="w-64 bg-slate-900 text-white h-full flex flex-col shadow-xl">
       <div className="p-6 border-b border-slate-700">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-ieu-500 rounded-lg flex items-center justify-center font-bold text-xl">S</div>
+          <img src={logo} alt="SchedulR" className="w-8 h-8 object-contain" />
           <span className="text-lg font-bold tracking-tight">SchedulR</span>
         </div>
       </div>

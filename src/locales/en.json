@@ -101,7 +101,8 @@
         "importAttendanceDesc": "Import a file containing course-student enrollments (e.g., sampleData_AllAttendanceLists.csv)",
         "importedStudents": "Imported {{count}} students.",
         "searchPlaceholder": "Search {{tab}}...",
-        "noSearchResults": "No results found for \"{{query}}\""
+        "noSearchResults": "No results found for \"{{query}}\"",
+        "attendance":"Attendance List"
     },
     "schedule": {
         "title": "Schedule View",
@@ -137,7 +138,11 @@
         "turkish": "Turkish",
         "theme": "Theme",
         "light": "Light",
-        "dark": "Dark"
+        "dark": "Dark",
+        "storage": "Storage",
+        "databaseLocation": "Database Location",
+        "databaseLocationDesc": "All your data is stored in this file",
+        "openLocation": "Show in folder"
     },
     "help": {
         "title": "Help Center",
@@ -189,8 +194,24 @@
         "exportDesc": "You can download and share the schedule in Excel format.",
         "csvExport": "Excel / CSV Output",
         "autoSave": "Auto Save",
-        "autoSaveDesc": "Your actions are saved to the database instantly.",
-        "generateImage": "/assets/help/generate1-en.png"
+        "generateImage": "/assets/help/generate-en.png",
+        "importCoursesImage": "/assets/help/import_courses-en.png",
+        "importClassroomsImage": "/assets/help/import_classrooms-en.png",
+        "importStudentsImage": "/assets/help/import_students-en.png",
+        "importStudentsImage2": "/assets/help/student2-en.png",
+        "importAttendanceImage": "/assets/help/import_attendance-en.png",
+        "importAttendanceImage2": "/assets/help/attendance2-en.png",
+        "allViewDesc": "View all exams collectively on a weekly calendar based on time and day.",
+        "roomViewDesc": "List the occupancy rates and exams for a selected classroom.",
+        "studentViewDesc": "Enter a student ID to extract that student's personal exam schedule.",
+        "courseViewDesc": "Search by course code to find when and where that exam is held.",
+        "viewAllImage": "/assets/help/view_all-en.png",
+        "viewRoomImage": "/assets/help/view_room-en.png",
+        "viewStudentImage": "/assets/help/view_student-en.png",
+        "viewCourseImage": "/assets/help/view_course-en.png",
+        "autoSaveDesc": "Every change you make is instantly saved to the database.",
+        "exportExcelImage": "/assets/help/export_excel-en.png",
+        "csvExportDesc":  "You can download the program in Excel or CSV format to share or print it."
     },
     "constraintsModal": {
         "title": "Exam Schedule Constraints",
@@ -203,6 +224,13 @@
         "lastExamTime": "Last Exam Start Time",
         "timeWarning": "No exams will start after this time",
         "cancel": "Cancel",
-        "generate": "Generate Schedule"
+        "generate": "Generate Schedule",
+        "studentConstraints": "STUDENT CONSTRAINTS",
+        "maxExamsPerDay": "Max Exams Per Student Per Day",
+        "minHoursBetweenExams": "Minimum Hours Between Exams",
+        "noLimit": "No limit",
+        "noMinimum": "No minimum",
+        "hour": "hour",
+        "hours": "hours"
     }
 }
