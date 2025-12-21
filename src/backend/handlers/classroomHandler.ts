@@ -7,8 +7,7 @@ export const registerClassroomHandlers = () => {
     });
 
     ipcMain.handle('add-classrooms-bulk', (_, classrooms: { name: string; capacity: number; building: string }[]) => {
-        // Atomically clear existing classrooms and add the new ones
-        classroomService.clearClassrooms();
+        // Now this handler will only add new classrooms without clearing existing ones.
         return classroomService.addClassroomsBulk(classrooms);
     });
 

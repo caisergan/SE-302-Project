@@ -442,21 +442,42 @@ function getFailureReason(
     let rootCause = '';
     let rootCauseType: ConstraintViolation['type'] = 'capacity';
 
-    // Priority 1: Capacity issue (no room can fit)
-    if (roomsWithCapacity.length === 0) {
-        rootCause = `NO ROOM AVAILABLE: Course has ${course.enrolledStudents} students but largest room only has ${maxRoomCapacity} seats.`;
+    // NEW Priority 1: Insufficient TOTAL capacity across rooms, even with splitting
+    let hasAnySlotEnoughTotalCapacity = false;
+    let maxPossibleCapacityInAnySingleSlot = 0;
+
+    for (const timeSlot of timeSlots) {
+        const occupiedRoomIdsAtSlot = new Set(
+            context.assignments
+                .filter(a => a.timeSlot.id === timeSlot.id)
+                .map(a => a.classroom.id)
+        );
+
+        const totalUnoccupiedCapacityAtSlot = classrooms
+            .filter(r => !occupiedRoomIdsAtSlot.has(r.id))
+            .reduce((sum, room) => sum + room.capacity, 0);
+
+        if (totalUnoccupiedCapacityAtSlot >= course.enrolledStudents) {
+            hasAnySlotEnoughTotalCapacity = true;
+            break; 
+        }
+        maxPossibleCapacityInAnySingleSlot = Math.max(maxPossibleCapacityInAnySingleSlot, totalUnoccupiedCapacityAtSlot);
+    }
+
+    if (!hasAnySlotEnoughTotalCapacity) {
+        rootCause = `INSUFFICIENT TOTAL CAPACITY: Course has ${course.enrolledStudents} students. No single time slot has enough total available classroom capacity (max ${maxPossibleCapacityInAnySingleSlot}) to accommodate all students, even with splitting across multiple rooms.`;
         rootCauseType = 'capacity';
         violations.push({
             type: 'capacity',
             severity: 'blocking',
-            description: `Need ${course.enrolledStudents - maxRoomCapacity} more seats. No room is large enough.`,
+            description: `Required total capacity: ${course.enrolledStudents}. Maximum available total capacity in any single time slot: ${maxPossibleCapacityInAnySingleSlot}.`,
             details: {
                 requiredCapacity: course.enrolledStudents,
-                maxAvailableCapacity: maxRoomCapacity
+                maxAvailableCapacity: maxPossibleCapacityInAnySingleSlot
             }
         });
     }
-    // Priority 2: Student conflicts blocking all slots
+    // Original Priority 1 becomes Priority 2 if the new total capacity check passes
     else if (studentConflictMap.size > 0) {
         const topConflict = [...studentConflictMap.entries()].sort((a, b) => b[1].students.size - a[1].students.size)[0];
         const [conflictCourse, data] = topConflict;
@@ -524,12 +545,12 @@ function getFailureReason(
     }
     // Fallback: General resource constraint
     else {
-        rootCause = `RESOURCE EXHAUSTED: All ${timeSlots.length} slots × ${roomsWithCapacity.length} rooms are occupied or blocked.`;
+        rootCause = `RESOURCE EXHAUSTED: All time/room combinations are exhausted for ${course.code}.`;
         rootCauseType = 'room_conflict';
         violations.push({
             type: 'room_conflict',
             severity: 'blocking',
-            description: 'All available time/room combinations are already used',
+            description: 'All available time/room combinations are already used or blocked by other constraints',
             details: { blockedSlots: slotsBlockedByRoomConflicts }
         });
     }
@@ -540,9 +561,16 @@ function getFailureReason(
     if (rootCauseType === 'capacity') {
         suggestions.push({
             priority: 'high',
-            action: `Add a room with ${course.enrolledStudents}+ seats`,
-            impact: `Will immediately allow scheduling ${course.code}`
+            action: `Add more classrooms or increase capacity of existing ones.`,
+            impact: `Will immediately provide more total seating capacity for ${course.code}`
         });
+        if (maxPossibleCapacityInAnySingleSlot > 0) {
+            suggestions.push({
+                priority: 'medium',
+                action: `Consider reducing enrollment for ${course.code} by ${course.enrolledStudents - maxPossibleCapacityInAnySingleSlot} students.`,
+                impact: `May allow course to fit into existing capacity.`
+            });
+        }
     }
 
     if (rootCauseType === 'student_conflict' && studentConflictMap.size > 0) {
@@ -649,6 +677,7 @@ function solve(
     if (index === courses.length) return true; // Tüm dersler atandıysa başarı!
 
     const currentCourse = courses[index];
+    let studentsRemainingForCurrentCourse = currentCourse.enrolledStudents;
 
     // 2. Her zaman dilimini sırayla dene
     for (const timeSlot of timeSlots) {
@@ -673,32 +702,67 @@ function solve(
         // Boş odaları filtrele ve KAPASİTEYE göre BÜYÜKTEN KÜÇÜĞE sırala
         // Bu "Largest Fit" stratejisidir. 150 kişilik ders için önce 100'lük, sonra 50'lik odayı seçer.
         const availableRooms = classrooms
-            .filter(r => !occupiedRoomIds.has(r.id))
-            .sort((a, b) => b.capacity - a.capacity);
+            .filter(r => !occupiedRoomIds.has(r.id)) // Only consider rooms that are not occupied
+            .sort((a, b) => b.capacity - a.capacity); // Sort by capacity descending (Largest Fit)
 
         // 5. Dersi Odalara Bölüştür (Split Logic)
-        let studentsRemaining = currentCourse.enrolledStudents;
+        let studentsRemaining = studentsRemainingForCurrentCourse; // Use a local variable for splitting logic
         const potentialAssignments: ScheduleAssignment[] = [];
+        const roomsUsedInCurrentSplit = new Set<string>(); // Keep track of rooms already used for this course split
 
-        // Odalar yettiği sürece doldur
-        for (const room of availableRooms) {
-            if (studentsRemaining <= 0) break;
+        while (studentsRemaining > 0) {
+            // Get rooms that are available (not occupied by another course in this time slot)
+            // and have not yet been used for *this* course's split.
+            const currentAvailableRooms = classrooms.filter(r =>
+                !occupiedRoomIds.has(r.id) && !roomsUsedInCurrentSplit.has(r.id)
+            );
 
-            // Odaya sığacak kadarını al (Oda kapasitesi mi, kalan öğrenci mi daha az?)
-            const count = Math.min(studentsRemaining, room.capacity);
-            
-            potentialAssignments.push({
-                course: currentCourse,
-                classroom: room,
-                timeSlot: timeSlot,
-                studentCount: count // <--- Kritik Nokta: Parçalı öğrenci sayısı
-            });
+            if (currentAvailableRooms.length === 0) {
+                studentsRemaining = -1; // Indicate failure to place all students
+                break;
+            }
 
-            studentsRemaining -= count;
+            // --- Strategy: Prioritize Best Fit for remaining students ---
+            let bestFitRoom: Classroom | null = null;
+            let bestFitCapacityDiff = Infinity; // capacity - studentsRemaining, want smallest non-negative difference
+
+            for (const room of currentAvailableRooms) {
+                if (room.capacity >= studentsRemaining) { // Can this room fit all remaining students?
+                    const diff = room.capacity - studentsRemaining;
+                    if (diff < bestFitCapacityDiff) { // Is it a better fit (smaller difference)?
+                        bestFitCapacityDiff = diff;
+                        bestFitRoom = room;
+                    }
+                }
+            }
+
+            if (bestFitRoom) { // Found a room that can fit all remaining students (Best Fit)
+                potentialAssignments.push({
+                    course: currentCourse,
+                    classroom: bestFitRoom,
+                    timeSlot: timeSlot,
+                    studentCount: studentsRemaining
+                });
+                roomsUsedInCurrentSplit.add(bestFitRoom.id);
+                studentsRemaining = 0; // All students placed
+            } else { // No single room can fit all remaining students, use Largest Fit strategy for current chunk
+                // Find the largest available and unused room
+                const largestRoom = currentAvailableRooms.sort((a, b) => b.capacity - a.capacity)[0];
+
+                const count = Math.min(studentsRemaining, largestRoom.capacity);
+                potentialAssignments.push({
+                    course: currentCourse,
+                    classroom: largestRoom,
+                    timeSlot: timeSlot,
+                    studentCount: count
+                });
+                roomsUsedInCurrentSplit.add(largestRoom.id);
+                studentsRemaining -= count;
+            }
         }
 
-        // 6. Eğer TÜM öğrenciler yerleştiyse (studentsRemaining <= 0)
-        if (studentsRemaining <= 0) {
+        // 6. Eğer TÜM öğrenciler yerleştiyse (studentsRemaining === 0)
+        if (studentsRemaining === 0) {
             // a) Atamaları Yap (Commit)
             for (const assignment of potentialAssignments) {
                 context.assignments.push(assignment);
@@ -769,18 +833,47 @@ function solveGreedy(
             // 3. ADIM: Öğrencileri odalara dağıt (SPLIT MANTIĞI)
             let studentsRemaining = course.enrolledStudents;
             const roomsToUse: Classroom[] = [];
+            const roomsUsedInCurrentSplit = new Set<string>();
 
-            for (const room of availableRooms) {
-                if (studentsRemaining <= 0) break;
+            while (studentsRemaining > 0) {
+                const currentAvailableRooms = classrooms.filter(r =>
+                    !occupiedRoomIds.has(r.id) && !roomsUsedInCurrentSplit.has(r.id)
+                );
 
-                // Odayı kullan listesine al
-                roomsToUse.push(room);
-                // Öğrencileri bu odaya doldur
-                studentsRemaining -= room.capacity;
+                if (currentAvailableRooms.length === 0) {
+                    studentsRemaining = -1; // Indicate failure
+                    break;
+                }
+
+                // --- Strategy: Prioritize Best Fit for remaining students ---
+                let bestFitRoom: Classroom | null = null;
+                let bestFitCapacityDiff = Infinity;
+
+                for (const room of currentAvailableRooms) {
+                    if (room.capacity >= studentsRemaining) {
+                        const diff = room.capacity - studentsRemaining;
+                        if (diff < bestFitCapacityDiff) {
+                            bestFitCapacityDiff = diff;
+                            bestFitRoom = room;
+                        }
+                    }
+                }
+
+                if (bestFitRoom) { // Found a room that can fit all remaining students (Best Fit)
+                    roomsToUse.push(bestFitRoom);
+                    roomsUsedInCurrentSplit.add(bestFitRoom.id);
+                    studentsRemaining = 0; // All students placed
+                } else { // No single room can fit all remaining students, use Largest Fit strategy
+                    const largestRoom = currentAvailableRooms.sort((a, b) => b.capacity - a.capacity)[0];
+
+                    roomsToUse.push(largestRoom);
+                    roomsUsedInCurrentSplit.add(largestRoom.id);
+                    studentsRemaining -= largestRoom.capacity;
+                }
             }
 
             // 4. ADIM: Eğer tüm öğrenciler yerleştiyse (yani odalar yettiyse), atamayı yap
-            if (studentsRemaining <= 0) {
+            if (studentsRemaining === 0) {
                 let studentsToAssign = course.enrolledStudents;
                 roomsToUse.forEach(room => {
                     const count = Math.min(studentsToAssign, room.capacity);

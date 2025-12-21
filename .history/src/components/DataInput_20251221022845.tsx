@@ -296,7 +296,7 @@ export const DataInput: React.FC<DataInputProps> = ({
                 setCourses([]);
                 setClassrooms([]);
                 setStudents([]);
-                // Assuming this setter is for the schedule data
+                setSchedule([]); // Assuming this setter is for the schedule data
 
                 showNotification("All data and generated schedules have been wiped.", 'success');
 
@@ -384,7 +384,7 @@ const handleAttendanceFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                 if (matchCount > 0) {
                     setAttendanceStatus({ fileName: file.name, count: matchCount });
                     if (skipCount > 0) {
-                        showNotification(`Identified ${matchCount} valid students. Ignored ${skipCount} unknown students.`, 'success');
+                        showNotification(`Identified ${matchCount} valid students. Ignored ${skipCount} unknown students.`, 'info');
                     } else {
                         showNotification(`Identified ${matchCount} valid students.`, 'success');
                     }
