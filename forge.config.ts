@@ -13,6 +13,7 @@ import path from 'path';
 
 const config: ForgeConfig = {
   packagerConfig: {
+    icon: './src/assets/logo',
     asar: {
       unpack: '**/node_modules/better-sqlite3/**',
     },
@@ -89,7 +90,7 @@ const config: ForgeConfig = {
       [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
       [FuseV1Options.EnableNodeCliInspectArguments]: false,
       [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
-      [FuseV1Options.OnlyLoadAppFromAsar]: true,
+      [FuseV1Options.OnlyLoadAppFromAsar]: false,
     }),
   ],
 };
