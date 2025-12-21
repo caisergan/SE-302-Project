@@ -171,45 +171,47 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
       setCurrentDate(new Date(e.target.value));
     }
   };
-const handleExport = async () => {
+
+ const handleExport = async () => {
     setIsExporting(true);
     setExportMessage(null);
 
     try {
-     
+      // 1. ADIM: Veriyi Sırala (Tarih ve Ders Koduna Göre)
+      // Bu işlem, CSV çıktısının Excel'de "düzenli" (tarih sırasına göre) görünmesini sağlar.
+      // Ayrıca aynı derslerin alt alta gelmesini garantileyerek aşağıdaki "Exam 1, Exam 1" mantığını mümkün kılar.
       const sortedSchedule = [...schedule].sort((a, b) => {
-     
         const timeDiff = new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
         if (timeDiff !== 0) return timeDiff;
-        
-       
         return a.courseId.localeCompare(b.courseId);
       });
 
+      // 2. ADIM: Akıllı Numaralandırma (Grouping)
       let examCounter = 0;
-      let lastKey = ''; 
+      let lastKey = ''; // Önceki satırın "Ders + Saat" bilgisini tutar
 
       const sessionsForExport = sortedSchedule.map(s => {
         const course = courses.find(c => c.id === s.courseId);
         const classroom = classrooms.find(c => c.id === s.classroomId);
         
-       
+        // Anahtar: Ders ID + Başlangıç Saati
+        // Eğer bu satır, bir önceki satırla aynı ders ve aynı saatteyse (Split Exam), aynı sınavdır.
         const currentKey = `${s.courseId}-${new Date(s.startTime).toISOString()}`;
         
-    
+        // Sadece ders veya saat değiştiğinde sayacı artır
         if (currentKey !== lastKey) {
           examCounter++; 
           lastKey = currentKey;
         }
 
         return {
-        
+          // Backend'den gelen karışık ID yerine, bizim ürettiğimiz sıralı "Exam X" numarasını kullanıyoruz.
           sessionId: `Exam ${examCounter}`, 
           courseCode: course?.code || s.courseId,
           classroomName: classroom?.name || s.classroomId,
           startTime: s.startTime instanceof Date ? s.startTime.toISOString() : s.startTime,
           endTime: s.endTime instanceof Date ? s.endTime.toISOString() : s.endTime,
-          
+          // TypeScript hatası almamak için güvenli erişim (studentCount backend'den geliyorsa)
           studentCount: (s as any).studentCount || 0 
         };
       });

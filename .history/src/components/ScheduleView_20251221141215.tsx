@@ -171,21 +171,20 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({ schedule, courses, c
       setCurrentDate(new Date(e.target.value));
     }
   };
-const handleExport = async () => {
+
+ const handleExport = async () => {
     setIsExporting(true);
     setExportMessage(null);
 
     try {
-     
+      
       const sortedSchedule = [...schedule].sort((a, b) => {
-     
         const timeDiff = new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
         if (timeDiff !== 0) return timeDiff;
-        
-       
         return a.courseId.localeCompare(b.courseId);
       });
 
+    
       let examCounter = 0;
       let lastKey = ''; 
 
@@ -193,23 +192,23 @@ const handleExport = async () => {
         const course = courses.find(c => c.id === s.courseId);
         const classroom = classrooms.find(c => c.id === s.classroomId);
         
-       
+        
         const currentKey = `${s.courseId}-${new Date(s.startTime).toISOString()}`;
         
-    
+       
         if (currentKey !== lastKey) {
           examCounter++; 
           lastKey = currentKey;
         }
 
         return {
-        
+         
           sessionId: `Exam ${examCounter}`, 
           courseCode: course?.code || s.courseId,
           classroomName: classroom?.name || s.classroomId,
           startTime: s.startTime instanceof Date ? s.startTime.toISOString() : s.startTime,
           endTime: s.endTime instanceof Date ? s.endTime.toISOString() : s.endTime,
-          
+         
           studentCount: (s as any).studentCount || 0 
         };
       });

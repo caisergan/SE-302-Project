@@ -176,40 +176,44 @@ const handleExport = async () => {
     setExportMessage(null);
 
     try {
-     
+      // 1. ADIM: Listeyi Sırala (Önce Tarih, Sonra Ders Kodu)
+      // Bu, CSV dosyasının Excel'de düzenli görünmesini sağlar.
       const sortedSchedule = [...schedule].sort((a, b) => {
-     
+        // Tarihe göre artan sıralama
         const timeDiff = new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
         if (timeDiff !== 0) return timeDiff;
         
-       
+        // Tarihler aynıysa ders koduna göre alfabetik sıralama
+        // Bu sayede split edilmiş parçalar (Aynı tarih, aynı ders) alt alta gelir.
         return a.courseId.localeCompare(b.courseId);
       });
 
+      // 2. ADIM: Gruplama ve Numaralandırma
       let examCounter = 0;
-      let lastKey = ''; 
+      let lastKey = ''; // Önceki satırın (Ders + Saat) bilgisini tutar
 
       const sessionsForExport = sortedSchedule.map(s => {
         const course = courses.find(c => c.id === s.courseId);
         const classroom = classrooms.find(c => c.id === s.classroomId);
         
-       
+        // Anahtar: Ders ID + Başlangıç Saati
         const currentKey = `${s.courseId}-${new Date(s.startTime).toISOString()}`;
         
-    
+        // Eğer bu satır, bir önceki satırla aynı ders ve aynı saatteyse (Split Exam), aynı sınavdır.
+        // Farklıysa sayacı artır.
         if (currentKey !== lastKey) {
           examCounter++; 
           lastKey = currentKey;
         }
 
         return {
-        
+          // Backend'den gelen ID yerine, bizim sıralı ve temiz numaramız
           sessionId: `Exam ${examCounter}`, 
           courseCode: course?.code || s.courseId,
           classroomName: classroom?.name || s.classroomId,
           startTime: s.startTime instanceof Date ? s.startTime.toISOString() : s.startTime,
           endTime: s.endTime instanceof Date ? s.endTime.toISOString() : s.endTime,
-          
+          // TypeScript için güvenli erişim
           studentCount: (s as any).studentCount || 0 
         };
       });
