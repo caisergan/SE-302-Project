@@ -132,7 +132,11 @@
         "turkish": "Turkish",
         "theme": "Theme",
         "light": "Light",
-        "dark": "Dark"
+        "dark": "Dark",
+        "storage": "Storage",
+        "databaseLocation": "Database Location",
+        "databaseLocationDesc": "All your data is stored in this file",
+        "openLocation": "Show in folder"
     },
     "help": {
         "title": "Help Center",

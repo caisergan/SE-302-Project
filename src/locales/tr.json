@@ -130,7 +130,11 @@
         "turkish": "Türkçe",
         "theme": "Tema",
         "light": "Açık",
-        "dark": "Koyu"
+        "dark": "Koyu",
+        "storage": "Depolama",
+        "databaseLocation": "Veritabanı Konumu",
+        "databaseLocationDesc": "Tüm verileriniz bu dosyada saklanır",
+        "openLocation": "Klasörde göster"
     },
     "help": {
         "title": "Yardım Merkezi",

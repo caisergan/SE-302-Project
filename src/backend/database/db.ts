@@ -1,11 +1,22 @@
 import Database from 'better-sqlite3';
 import path from 'path';
+import fs from 'fs';
 import { app } from 'electron';
 
 const isDev = !app.isPackaged;
+
+// In production, store in Documents/SchedulR/schedulr.db
+const documentsPath = app.getPath('documents');
+const schedulrDir = path.join(documentsPath, 'SchedulR');
+
+// Ensure the SchedulR directory exists in production
+if (!isDev && !fs.existsSync(schedulrDir)) {
+  fs.mkdirSync(schedulrDir, { recursive: true });
+}
+
 const dbPath = isDev
   ? path.join(__dirname, '../../schedulr.db') // In dev, store in project root
-  : path.join(app.getPath('userData'), 'schedulr.db'); // In prod, store in userData for now
+  : path.join(schedulrDir, 'schedulr.db'); // In prod, store in Documents/SchedulR
 
 const db = new Database(dbPath, { verbose: console.log });
 
@@ -50,4 +61,5 @@ db.exec(`
 `);
 
 export default db;
+export { dbPath };
 
