@@ -1,12 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { DisplaySession, Course, Classroom } from '../types'; // Use DisplaySession
+import { ExamSession, Course, Classroom } from '../types';
 
 interface TimeSlotDetailModalProps {
     isOpen: boolean;
     onClose: () => void;
-    exams: DisplaySession[]; // Changed from ExamSession[]
+    exams: ExamSession[];
     courses: Course[];
     classrooms: Classroom[];
     timeSlot: { start: Date; end: Date } | null;
@@ -40,21 +40,29 @@ export const TimeSlotDetailModal: React.FC<TimeSlotDetailModalProps> = ({
         });
     };
 
-    // This creates a more visually distinct set of colors
-    const a = [
-        { bg: 'bg-ieu-50', border: 'border-ieu-300', text: 'text-ieu-800' },
-        { bg: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-800' },
-        { bg: 'bg-sky-50', border: 'border-sky-300', text: 'text-sky-800' },
-        { bg: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-800' },
-        { bg: 'bg-rose-50', border: 'border-rose-300', text: 'text-rose-800' },
-        { bg: 'bg-purple-50', border: 'border-purple-300', text: 'text-purple-800' },
-        { bg: 'bg-cyan-50', border: 'border-cyan-300', text: 'text-cyan-800' },
-        { bg: 'bg-orange-50', border: 'border-orange-300', text: 'text-orange-800' },
-    ]
+    // Color palette for different classrooms
+    const classroomColors = [
+        { bg: 'bg-ieu-50', border: 'border-ieu-400', text: 'text-ieu-600' },
+        { bg: 'bg-emerald-50', border: 'border-emerald-400', text: 'text-emerald-700' },
+        { bg: 'bg-amber-50', border: 'border-amber-400', text: 'text-amber-700' },
+        { bg: 'bg-rose-50', border: 'border-rose-400', text: 'text-rose-700' },
+        { bg: 'bg-purple-50', border: 'border-purple-400', text: 'text-purple-700' },
+        { bg: 'bg-cyan-50', border: 'border-cyan-400', text: 'text-cyan-700' },
+        { bg: 'bg-orange-50', border: 'border-orange-400', text: 'text-orange-700' },
+        { bg: 'bg-teal-50', border: 'border-teal-400', text: 'text-teal-700' },
+    ];
 
+    // Map classrooms to colors
+    const classroomColorMap = new Map<string, typeof classroomColors[0]>();
+    const uniqueClassrooms = [...new Set(exams.map(e => e.classroomId))];
+    uniqueClassrooms.forEach((classroomId, index) => {
+        classroomColorMap.set(classroomId, classroomColors[index % classroomColors.length]);
+    });
+
+    // Use Portal to render modal at document body level
     return ReactDOM.createPortal(
         <div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] animate-fade-in"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] animate-fade-in"
             onClick={onClose}
         >
             <div
@@ -65,22 +73,31 @@ export const TimeSlotDetailModal: React.FC<TimeSlotDetailModalProps> = ({
                 <div className="px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-ieu-500 to-ieu-600 flex-shrink-0">
                     <div className="flex justify-between items-start">
                         <div>
-                            <h2 className="text-xl font-bold text-slate-800">
+                            <h2 className="text-lg font-bold text-white">
                                 {t('schedule.timeSlotDetails')}
                             </h2>
-                            <p className="text-slate-500 text-sm mt-1">
+                            <p className="text-ieu-100 text-sm mt-1">
                                 {formatDate(timeSlot.start)}
-                                <span className="mx-2 text-slate-300">|</span>
+                            </p>
+                            <p className="text-ieu-200 text-sm">
                                 {formatTime(timeSlot.start)} - {formatTime(timeSlot.end)}
                             </p>
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2 -mr-2 text-slate-400 hover:bg-slate-200 rounded-full transition-colors"
-                            title={t('common.close')}
+                            className="p-2 hover:bg-white/20 rounded-lg transition-colors text-white"
+                            title={t('common.cancel')}
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M18.3 5.71a.996.996 0 0 0-1.41 0L12 10.59L7.11 5.7A.996.996 0 1 0 5.7 7.11L10.59 12L5.7 16.89a.996.996 0 1 0 1.41 1.41L12 13.41l4.89 4.89a.996.996 0 1 0 1.41-1.41L13.41 12l4.89-4.89c.38-.38.38-1.02 0-1.4z"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
                         </button>
+                    </div>
+                    <div className="mt-3 flex items-center gap-2">
+                        <span className="bg-white/20 text-white px-3 py-1 rounded-full text-sm font-medium">
+                            {t('schedule.multipleExams', { count: exams.length })}
+                        </span>
                     </div>
                 </div>
 
@@ -88,66 +105,57 @@ export const TimeSlotDetailModal: React.FC<TimeSlotDetailModalProps> = ({
                 <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
                     {exams.map((exam, index) => {
                         const course = courses.find(c => c.id === exam.courseId);
-                        
+                        const classroom = classrooms.find(c => c.id === exam.classroomId);
+                        const colorScheme = classroomColorMap.get(exam.classroomId) || classroomColors[0];
+
                         return (
                             <div
                                 key={exam.id}
-                                className={`bg-white border rounded-lg shadow-sm overflow-hidden`}
+                                className={`${colorScheme.bg} border-l-4 ${colorScheme.border} rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow`}
                             >
-                                {/* Course Info Header */}
-                                <div className="p-4 bg-slate-50/70 border-b">
-                                     <h3 className="font-bold text-lg text-ieu-800">
-                                        {course?.code || exam.courseId}
-                                    </h3>
-                                    <p className="text-slate-600 font-medium text-sm">
-                                        {course?.name || t('common.noData')}
-                                    </p>
+                                <div className="flex justify-between items-start">
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className={`font-bold text-lg ${colorScheme.text}`}>
+                                                {course?.code || exam.courseId}
+                                            </span>
+                                            <span className="text-slate-400 text-sm">#{index + 1}</span>
+                                        </div>
+                                        <p className="text-slate-700 font-medium">
+                                            {course?.name || t('common.noData')}
+                                        </p>
+                                    </div>
                                 </div>
-                                
-                                {/* Body (SPLIT LOGIC HERE) */}
-                                <div className="p-4">
-                                    {exam.isSplit ? (
-                                        // --- RENDER SPLIT EXAM ---
-                                        <div>
-                                            <div className="flex justify-between items-center mb-3">
-                                                <h4 className="text-sm font-semibold text-slate-700">
-                                                    {t('schedule.splitClassrooms')}
-                                                </h4>
-                                                <span className="text-xs font-medium bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">
-                                                    {t('schedule.enrolledCount', { count: exam.totalStudents || course?.enrolledStudents || 0 })}
-                                                </span>
-                                            </div>
-                                            <div className="space-y-2">
-                                                {exam.classroomList?.map((cr, index) => {
-                                                     const classroom = classrooms.find(c => c.id === cr.name);
-                                                     return (
-                                                         <div key={index} className="flex items-center justify-between bg-slate-50 rounded-md p-2 pl-3 border">
-                                                             <div className="flex items-center gap-2">
-                                                                <svg className="text-slate-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
-                                                                <span className="font-medium text-slate-700">{classroom?.name || cr.name}</span>
-                                                                <span className="text-xs text-slate-400">({t('schedule.capacityShort', { capacity: classroom?.capacity || 0 })})</span>
-                                                             </div>
-                                                             <span className="text-sm font-semibold text-slate-600">
-                                                                {t('schedule.studentCount', { count: cr.count })}
-                                                             </span>
-                                                         </div>
-                                                     )
-                                                })}
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        // --- RENDER NORMAL EXAM ---
-                                        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-                                            <div className="flex items-center gap-2 text-slate-600">
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
-                                                <span className="font-medium">{classrooms.find(c=>c.id === exam.classroomId)?.name || exam.classroomId}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-slate-600">
-                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg>
-                                                <span>{t('schedule.enrolledCount', { count: exam.studentCount || course?.enrolledStudents || 0 })}</span>
-                                            </div>
-                                        </div>
-                                    )}
+
+                                <div className="mt-3 flex flex-wrap gap-4 text-sm">
+                                    {/* Classroom */}
+                                    <div className="flex items-center gap-2 text-slate-600">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                                            <circle cx="12" cy="10" r="3" />
+                                        </svg>
+                                        <span className="font-medium">
+                                            {classroom?.name || exam.classroomId}
+                                        </span>
+                                        {classroom && (
+                                            <span className="text-slate-400">
+                                                ({t('schedule.capacityShort', { capacity: classroom.capacity })})
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* Enrolled Students */}
+                                    <div className="flex items-center gap-2 text-slate-600">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                            <circle cx="9" cy="7" r="4" />
+                                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                        </svg>
+                                        <span>
+                                            {t('schedule.enrolledCount', { count: course?.enrolledStudents || 0 })}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         );
@@ -158,9 +166,9 @@ export const TimeSlotDetailModal: React.FC<TimeSlotDetailModalProps> = ({
                 <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-end flex-shrink-0">
                     <button
                         onClick={onClose}
-                        className="px-5 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors font-medium text-sm focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2"
+                        className="px-4 py-2 bg-ieu-500 text-white rounded-lg hover:bg-ieu-600 transition-colors font-medium"
                     >
-                        {t('common.close')}
+                        {t('common.cancel')}
                     </button>
                 </div>
             </div>
