@@ -19,7 +19,7 @@
         "nextWeek": "Next Week",
         "today": "Today",
         "done": "Done",
-    "more": "more"
+        "more": "more"
     },
     "dashboard": {
         "title": "Dashboard",
@@ -102,7 +102,11 @@
         "importedStudents": "Imported {{count}} students.",
         "searchPlaceholder": "Search {{tab}}...",
         "noSearchResults": "No results found for \"{{query}}\"",
-        "attendance":"Attendance List"
+        "attendance": "Attendance List",
+        "tabMismatchError": "File type mismatch: This file contains {{detected}} data, but you're on the {{active}} tab.",
+        "unrecognizedFileFormat": "Unrecognized file format. Please check the file structure.",
+        "fileProcessed": "Successfully processed {{type}} file.",
+        "importError": "Failed to import the file. Please check the format."
     },
     "schedule": {
         "title": "Schedule View",
@@ -194,24 +198,24 @@
         "exportDesc": "You can download and share the schedule in Excel format.",
         "csvExport": "Excel / CSV Output",
         "autoSave": "Auto Save",
-        "generateImage": "/assets/help/generate-en.png",
-        "importCoursesImage": "/assets/help/import_courses-en.png",
-        "importClassroomsImage": "/assets/help/import_classrooms-en.png",
-        "importStudentsImage": "/assets/help/import_students-en.png",
-        "importStudentsImage2": "/assets/help/student2-en.png",
-        "importAttendanceImage": "/assets/help/import_attendance-en.png",
-        "importAttendanceImage2": "/assets/help/attendance2-en.png",
+        "generateImage": "./assets/help/generate-en.png",
+        "importCoursesImage": "./assets/help/import_courses-en.png",
+        "importClassroomsImage": "./assets/help/import_classrooms-en.png",
+        "importStudentsImage": "./assets/help/import_students-en.png",
+        "importStudentsImage2": "./assets/help/student2-en.png",
+        "importAttendanceImage": "./assets/help/import_attendance-en.png",
+        "importAttendanceImage2": "./assets/help/attendance2-en.png",
         "allViewDesc": "View all exams collectively on a weekly calendar based on time and day.",
         "roomViewDesc": "List the occupancy rates and exams for a selected classroom.",
         "studentViewDesc": "Enter a student ID to extract that student's personal exam schedule.",
         "courseViewDesc": "Search by course code to find when and where that exam is held.",
-        "viewAllImage": "/assets/help/view_all-en.png",
-        "viewRoomImage": "/assets/help/view_room-en.png",
-        "viewStudentImage": "/assets/help/view_student-en.png",
-        "viewCourseImage": "/assets/help/view_course-en.png",
+        "viewAllImage": "./assets/help/view_all-en.png",
+        "viewRoomImage": "./assets/help/view_room-en.png",
+        "viewStudentImage": "./assets/help/view_student-en.png",
+        "viewCourseImage": "./assets/help/view_course-en.png",
         "autoSaveDesc": "Every change you make is instantly saved to the database.",
-        "exportExcelImage": "/assets/help/export_excel-en.png",
-        "csvExportDesc":  "You can download the program in Excel or CSV format to share or print it."
+        "exportExcelImage": "./assets/help/export_excel-en.png",
+        "csvExportDesc": "You can download the program in Excel or CSV format to share or print it."
     },
     "constraintsModal": {
         "title": "Exam Schedule Constraints",
